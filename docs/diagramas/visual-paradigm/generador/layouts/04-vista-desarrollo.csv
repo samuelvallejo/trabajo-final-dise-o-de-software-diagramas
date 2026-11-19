@@ -1,0 +1,12 @@
+controller;375;55;750;243
+service;196;340;1108;299
+repository;9;680;1178;220
+model;342;960;1096;1300
+ReporteController;395;96;709;182
+ReporteService;216;381;1069;238
+ReporteRepository;814;721;351;158
+CiudadanoRepository;29;749;348;102
+OperadorRepository;426;740;338;121
+Reporte;691;1001;601;799
+Ciudadano;363;1890;559;350
+Operador;972;1927;446;275

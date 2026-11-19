@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+~$*.pptx
+*.vpp.bak_*
+*.vpp.lck
+.*.vpp.lck

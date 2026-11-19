@@ -1,0 +1,120 @@
+@startuml 03-vista-logica
+' EcoGestión – Vista lógica: modelo de clases inicial
+' Persistencia en MongoDB: los id son ObjectId (String).
+skinparam dpi 120
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 60
+skinparam ranksep 60
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+  ArrowColor #333333
+}
+hide circle
+hide empty members
+title EcoGestión — Modelo de clases inicial
+
+class GestorReportes {
+  - ciudadanos : List<Ciudadano>
+  - operadores : List<Operador>
+  - reportes : List<Reporte>
+  --
+  + GestorReportes()
+  + registrarReporte(c : Ciudadano, descripcion : String) : Reporte
+  + getCiudadanos() : List<Ciudadano>
+  + setCiudadanos(ciudadanos : List<Ciudadano>) : void
+  + getOperadores() : List<Operador>
+  + setOperadores(operadores : List<Operador>) : void
+  + getReportes() : List<Reporte>
+  + setReportes(reportes : List<Reporte>) : void
+}
+
+class Ciudadano {
+  - id : String
+  - nombre : String
+  - documento : String
+  - correo : String
+  - contrasenaHash : String
+  - sector : String
+  --
+  + Ciudadano(id : String, nombre : String, documento : String, correo : String)
+  + getId() : String
+  + setId(id : String) : void
+  + getNombre() : String
+  + setNombre(nombre : String) : void
+  + getDocumento() : String
+  + setDocumento(documento : String) : void
+  + getCorreo() : String
+  + setCorreo(correo : String) : void
+  + getSector() : String
+  + setSector(sector : String) : void
+}
+
+class Operador {
+  - id : String
+  - nombre : String
+  - disponible : boolean
+  --
+  + Operador(id : String, nombre : String, disponible : boolean)
+  + getId() : String
+  + setId(id : String) : void
+  + getNombre() : String
+  + setNombre(nombre : String) : void
+  + isDisponible() : boolean
+  + setDisponible(valor : boolean) : void
+  + marcarOcupado() : void
+}
+
+class Reporte {
+  - id : String
+  - descripcion : String
+  - tipoResiduo : String
+  - prioridad : String
+  - latitud : double
+  - longitud : double
+  - direccion : String
+  - sector : String
+  - fotos : List<String>
+  - fechaReporte : LocalDate
+  - fechaResolucion : LocalDate [0..1]
+  - estado : String
+  - descripcionTrabajo : String [0..1]
+  - fotosEvidencia : List<String>
+  - ciudadano : Ciudadano
+  - operador : Operador [0..1]
+  - reporteOriginal : Reporte [0..1]
+  --
+  + Reporte(id : String, fecha : LocalDate, ciudadano : Ciudadano, descripcion : String)
+  + cambiarEstado(nuevo : String) : void
+  + marcarComoDuplicado(original : Reporte) : void
+  + registrarCierre(descripcion : String, fotos : List<String>) : void
+  + getId() : String
+  + setId(id : String) : void
+  + getDescripcion() : String
+  + setDescripcion(descripcion : String) : void
+  + getFechaReporte() : LocalDate
+  + setFechaReporte(fecha : LocalDate) : void
+  + getFechaResolucion() : LocalDate
+  + setFechaResolucion(fecha : LocalDate) : void
+  + getTipoResiduo() : String
+  + setTipoResiduo(tipo : String) : void
+  + getPrioridad() : String
+  + setPrioridad(prioridad : String) : void
+  + getEstado() : String
+  + setEstado(estado : String) : void
+  + getCiudadano() : Ciudadano
+  + setCiudadano(ciudadano : Ciudadano) : void
+  + getOperador() : Operador
+  + setOperador(operador : Operador) : void
+}
+
+GestorReportes "1" -- "0..*" Ciudadano : registra
+GestorReportes "1" -- "0..*" Operador : administra
+GestorReportes "1" -- "0..*" Reporte : gestiona
+Ciudadano "1" -- "0..*" Reporte : historial
+Operador "0..1" -- "0..*" Reporte : atiende
+Reporte "0..*" -- "0..1" Reporte : duplicadoDe
+@enduml

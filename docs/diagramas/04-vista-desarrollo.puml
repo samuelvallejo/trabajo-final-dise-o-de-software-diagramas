@@ -1,0 +1,166 @@
+@startuml 04-vista-desarrollo
+' EcoGestión – Vista de desarrollo: diagrama de clases por capas para el flujo de reportes
+' (Spring Boot + Spring Data MongoDB)
+skinparam dpi 120
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 40
+skinparam ranksep 55
+skinparam class {
+  BackgroundColor #FFFFFF
+  BorderColor #555555
+  ArrowColor #333333
+}
+skinparam package {
+  BorderColor #222222
+  BorderThickness 1.4
+  FontStyle bold
+}
+hide circle
+skinparam packageStyle rectangle
+skinparam roundCorner 6
+<style>
+package {
+  HorizontalAlignment left
+}
+</style>
+hide empty members
+title EcoGestión — Diagrama de clases por capas (Controller → Service → Repository)
+
+package "controller" #E8F0FE {
+  class ReporteController <<RestController>> {
+    - reporteService : ReporteService
+    --
+    + ReporteController(reporteService : ReporteService)
+    + registrarReporte(request : ReporteRequest) : ResponseEntity<ReporteResponse>
+    + asignarReporte(id : String, request : AsignacionRequest) : ResponseEntity<ReporteResponse>
+    + listarReportes() : ResponseEntity<List<ReporteResponse>>
+    + obtenerReporte(id : String) : ResponseEntity<ReporteResponse>
+  }
+}
+
+package "service" #EAF5EA {
+  class ReporteService <<Service>> {
+    - ciudadanoRepository : CiudadanoRepository
+    - operadorRepository : OperadorRepository
+    - reporteRepository : ReporteRepository
+    --
+    + ReporteService(ciudadanoRepository : CiudadanoRepository, operadorRepository : OperadorRepository, reporteRepository : ReporteRepository)
+    + registrarReporte(request : ReporteRequest) : ReporteResponse
+    + asignarReporte(id : String, operadorId : String) : ReporteResponse
+    + listarReportes() : List<ReporteResponse>
+    + obtenerReporte(id : String) : ReporteResponse
+    - validarDisponibilidad(operador : Operador) : void
+  }
+}
+
+package "repository" #FDF3E6 {
+  interface ReporteRepository <<interface>> {
+    .. extends MongoRepository<Reporte, String> ..
+    + findAll() : List<Reporte>
+    + findById(id : String) : Optional<Reporte>
+    + save(reporte : Reporte) : Reporte
+    + findByEstado(estado : String) : List<Reporte>
+  }
+  interface CiudadanoRepository <<interface>> {
+    .. extends MongoRepository<Ciudadano, String> ..
+    + findById(id : String) : Optional<Ciudadano>
+  }
+  interface OperadorRepository <<interface>> {
+    .. extends MongoRepository<Operador, String> ..
+    + findById(id : String) : Optional<Operador>
+    + save(operador : Operador) : Operador
+  }
+}
+
+package "model" #FFFFFF {
+  class Reporte <<Document>> {
+    - id : String
+    - descripcion : String
+    - tipoResiduo : String
+    - prioridad : String
+    - latitud : double
+    - longitud : double
+    - direccion : String
+    - sector : String
+    - fotos : List<String>
+    - fechaReporte : LocalDate
+    - fechaResolucion : LocalDate [0..1]
+    - estado : String
+    - descripcionTrabajo : String [0..1]
+    - fotosEvidencia : List<String>
+    - ciudadano : Ciudadano
+    - operador : Operador [0..1]
+    - reporteOriginal : Reporte [0..1]
+    - version : Long
+    --
+    + Reporte(fechaReporte : LocalDate, ciudadano : Ciudadano, descripcion : String)
+    + estaPendiente() : boolean
+    + asignar(operador : Operador) : void
+    + cambiarEstado(nuevo : String) : void
+    + marcarComoDuplicado(original : Reporte) : void
+    + registrarCierre(descripcion : String, fotos : List<String>) : void
+    + getId() : String
+    + setId(id : String) : void
+    + getDescripcion() : String
+    + setDescripcion(descripcion : String) : void
+    + getFechaReporte() : LocalDate
+    + setFechaReporte(fechaReporte : LocalDate) : void
+    + getFechaResolucion() : LocalDate
+    + setFechaResolucion(fechaResolucion : LocalDate) : void
+    + getEstado() : String
+    + setEstado(estado : String) : void
+    + getCiudadano() : Ciudadano
+    + setCiudadano(ciudadano : Ciudadano) : void
+    + getOperador() : Operador
+    + setOperador(operador : Operador) : void
+    + getVersion() : Long
+  }
+  class Ciudadano <<Document>> {
+    - id : String
+    - nombre : String
+    - documento : String
+    - correo : String
+    - contrasenaHash : String
+    - sector : String
+    --
+    + Ciudadano(id : String, nombre : String, documento : String, correo : String)
+    + getId() : String
+    + setId(id : String) : void
+    + getNombre() : String
+    + setNombre(nombre : String) : void
+    + getDocumento() : String
+    + setDocumento(documento : String) : void
+    + getCorreo() : String
+    + setCorreo(correo : String) : void
+  }
+  class Operador <<Document>> {
+    - id : String
+    - nombre : String
+    - disponible : boolean
+    --
+    + Operador(id : String, nombre : String, disponible : boolean)
+    + marcarOcupado() : void
+    + isDisponible() : boolean
+    + setDisponible(valor : boolean) : void
+    + getId() : String
+    + setId(id : String) : void
+    + getNombre() : String
+    + setNombre(nombre : String) : void
+  }
+}
+
+ReporteController --> "1" ReporteService
+ReporteService --> "1" ReporteRepository
+ReporteService --> "1" CiudadanoRepository
+ReporteService --> "1" OperadorRepository
+ReporteService ..> Reporte : <<create>>
+ReporteRepository ..> Reporte : <<use>>
+CiudadanoRepository ..> Ciudadano : <<use>>
+OperadorRepository ..> Operador : <<use>>
+Reporte "0..*" --> "1" Ciudadano : historial
+Reporte "0..*" --> "0..1" Operador : atiende
+Reporte "0..*" --> "0..1" Reporte : duplicadoDe
+@enduml

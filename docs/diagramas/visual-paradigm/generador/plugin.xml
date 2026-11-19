@@ -1,0 +1,3 @@
+<plugin id="ecogestion.vp" name="EcoGestion – generador de diagramas" description="Construye los 5 diagramas de arquitectura de EcoGestion" provider="EcoGestion" class="ecogestion.vp.EcoGestionVP">
+  <runtime><library path="classes" relativePath="true"/></runtime>
+</plugin>
