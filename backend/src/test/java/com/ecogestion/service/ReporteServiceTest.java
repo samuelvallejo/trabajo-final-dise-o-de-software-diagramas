@@ -19,6 +19,7 @@ import com.ecogestion.repository.ReporteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.dao.OptimisticLockingFailureException;
 
 import java.time.LocalDateTime;
@@ -63,10 +64,10 @@ class ReporteServiceTest {
         servicio = new ReporteService(ciudadanoRepository, operadorRepository, reporteRepository, new ClasificacionService(),
                 horarioRutaService, notificacionService, servicioMapas, almacenamiento, propiedades);
 
-        ciudadano = new Ciudadano("Ana", "123", "ana@correo.co", "hash");
-        ciudadano.setId("c1");
+        ciudadano = new Ciudadano("Ana", "123", "ana@correo.co", "hash", null);
+        ReflectionTestUtils.setField(ciudadano, "id", "c1");
         operador = new Operador("Luis", "456", "luis@correo.co", "hash");
-        operador.setId("o1");
+        ReflectionTestUtils.setField(operador, "id", "o1");
         when(ciudadanoRepository.findById("c1")).thenReturn(Optional.of(ciudadano));
         when(operadorRepository.findById("o1")).thenReturn(Optional.of(operador));
         when(reporteRepository.save(any(Reporte.class))).thenAnswer(i -> i.getArgument(0));
@@ -74,7 +75,7 @@ class ReporteServiceTest {
 
     private Reporte reportePendiente() {
         Reporte r = new Reporte(LocalDateTime.now(), ciudadano, "Escombros en el andén");
-        r.setId("r1");
+        ReflectionTestUtils.setField(r, "id", "r1");
         r.clasificar(TipoResiduo.ESCOMBROS, Prioridad.MEDIA);
         when(reporteRepository.findById("r1")).thenReturn(Optional.of(r));
         return r;

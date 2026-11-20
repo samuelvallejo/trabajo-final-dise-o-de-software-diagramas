@@ -71,7 +71,7 @@ public final class ReporteDto {
                     r.getFotosEvidencia(),
                     r.getCiudadano() == null ? null : new PersonaResumen(r.getCiudadano().getId(), r.getCiudadano().getNombre()),
                     r.getOperador() == null ? null : new PersonaResumen(r.getOperador().getId(), r.getOperador().getNombre()),
-                    r.esDuplicado() ? r.getReporteOriginal().getId() : null);
+                    r.getReporteOriginalId());
         }
     }
 

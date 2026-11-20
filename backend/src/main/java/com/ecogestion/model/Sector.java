@@ -8,6 +8,7 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -44,9 +45,10 @@ public class Sector {
         return barrios.stream().anyMatch(b -> b.equalsIgnoreCase(barrio));
     }
 
+    // Consultas de solo lectura: no hay setters (los cambios pasan por los métodos de arriba, que validan).
+    // Los getters existen para armar las respuestas de la API; las colecciones se devuelven inmodificables.
     public String getId() { return id; }
     public String getNombre() { return nombre; }
     public String getComuna() { return comuna; }
-    public List<String> getBarrios() { return barrios; }
-    public GeoJsonPolygon getLimite() { return limite; }
+    public List<String> getBarrios() { return Collections.unmodifiableList(barrios); }
 }

@@ -80,6 +80,15 @@ Resumen:
 | Indirección | Repositorios, `CanalNotificacion`, `CuentaUsuario`, `EventosAutenticacion` | Un intermediario desacopla dos partes (servicio ↔ MongoDB, servicio ↔ SMTP, dominio ↔ Spring Security) |
 | Variaciones protegidas | Interfaces de `integracion` y `EcoGestionProperties` | Cambiar de proveedor de correo, mapas o almacenamiento, o un parámetro, no obliga a tocar la lógica |
 
+**Encapsulamiento (sin get/set casuales).** Las clases del modelo no tienen setters: cada cambio pasa por un
+método que expresa la acción y valida su regla (`Reporte.asignar`, `Reporte.registrarCierre`,
+`Ciudadano.actualizarPerfil`, `Usuario.cambiarContrasena`, `Operador.marcarOcupado`), y `Reporte.cambiarEstado`
+es privado para que nadie se salte el flujo de estados. Spring Data guarda y lee los atributos por reflexión,
+así que no necesita setters. Solo existen los getters que alguien usa (para armar las respuestas de la API, las
+notificaciones o las estadísticas); son de solo lectura y las listas se devuelven inmodificables. El hash de la
+contraseña solo lo lee Spring Security y nunca sale en la API. Las vistas lógica y de desarrollo muestran esta
+regla con una nota y separan las "consultas de solo lectura".
+
 ### Frontend
 
 | Página | Rol | Qué permite |

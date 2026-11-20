@@ -4,7 +4,6 @@ import com.ecogestion.config.EcoGestionProperties;
 import com.ecogestion.dto.UsuarioDto.OperadorRequest;
 import com.ecogestion.dto.UsuarioDto.PerfilRequest;
 import com.ecogestion.dto.UsuarioDto.RegistroRequest;
-import com.ecogestion.excepcion.DatosInvalidosException;
 import com.ecogestion.excepcion.RecursoNoEncontradoException;
 import com.ecogestion.excepcion.ReglaNegocioException;
 import com.ecogestion.model.Administrador;
@@ -68,9 +67,8 @@ public class UsuarioService {
         if (ciudadanoRepository.existsByDocumento(datos.documento())) {
             throw new ReglaNegocioException("El documento ya está registrado");
         }
-        Ciudadano ciudadano = new Ciudadano(datos.nombre().trim(), datos.documento().trim(), correo,
-                passwordEncoder.encode(datos.contrasena()));
-        ciudadano.setSector(validarSector(datos.sector()));
+        Ciudadano ciudadano = new Ciudadano(datos.nombre(), datos.documento(), correo,
+                passwordEncoder.encode(datos.contrasena()), validarSector(datos.sector()));
         return ciudadanoRepository.save(ciudadano);
     }
 
@@ -93,7 +91,7 @@ public class UsuarioService {
     /** Al entrar correctamente se borran los intentos fallidos acumulados. */
     public void registrarIngresoExitoso(String correo) {
         buscarPorCorreo(correo)
-                .filter(u -> u.getIntentosFallidos() > 0 || u.getBloqueadoHasta() != null)
+                .filter(Usuario::tieneIntentosFallidos)
                 .ifPresent(usuario -> {
                     usuario.reiniciarIntentos();
                     guardar(usuario);
@@ -114,20 +112,15 @@ public class UsuarioService {
         if (!correo.equals(ciudadano.getCorreo())) {
             validarCorreoLibre(correo);
         }
-        ciudadano.setNombre(datos.nombre().trim());
-        ciudadano.setCorreo(correo);
-        ciudadano.setSector(validarSector(datos.sector()));
+        ciudadano.actualizarPerfil(datos.nombre(), correo, validarSector(datos.sector()));
         return ciudadanoRepository.save(ciudadano);
     }
 
-    /** Cambia la contraseña solo si la actual es correcta. */
+    /** Cambia la contraseña; el propio usuario verifica que la actual sea correcta (Experto en información). */
     public void cambiarContrasena(String correoUsuario, String actual, String nueva) {
         Usuario usuario = buscarPorCorreo(correoUsuario)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario", correoUsuario));
-        if (!passwordEncoder.matches(actual, usuario.getContrasenaHash())) {
-            throw new DatosInvalidosException("La contraseña actual no es correcta");
-        }
-        usuario.setContrasenaHash(passwordEncoder.encode(nueva));
+        usuario.cambiarContrasena(actual, nueva, passwordEncoder);
         guardar(usuario);
     }
 

@@ -13,6 +13,7 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -25,6 +26,10 @@ import java.util.Objects;
  * PENDIENTE → ASIGNADO → EN_PROCESO → RESUELTO. Cada método público de negocio (asignar,
  * iniciarAtencion, registrarCierre, marcarComoDuplicado...) valida sus reglas y lanza una excepción
  * si la operación no está permitida, así el reporte nunca queda en un estado inválido.
+ *
+ * <p><b>Encapsulamiento:</b> no tiene setters. Si existiera {@code setEstado} o {@code setOperador},
+ * cualquier clase podría saltarse el flujo de estados o asignar dos operadores. Por eso los atributos solo
+ * cambian con métodos de negocio, y los getters son de solo lectura y existen para mostrar datos.
  *
  * <p><b>Patrones GRASP:</b>
  * <ul>
@@ -125,8 +130,12 @@ public class Reporte {
 
     // ===================================================== Estados (HU-09)
 
-    /** Avanza al estado indicado. El enum EstadoReporte decide si el salto está permitido. */
-    public void cambiarEstado(EstadoReporte nuevo) {
+    /**
+     * Avanza al estado indicado; el enum EstadoReporte decide si el salto está permitido.
+     * Es privado a propósito: desde fuera solo se puede cambiar el estado con una acción con sentido
+     * (asignar, iniciarAtencion, registrarCierre), que además guarda los datos que esa acción exige.
+     */
+    private void cambiarEstado(EstadoReporte nuevo) {
         if (!estado.puedeAvanzarA(nuevo)) {
             throw new ReglaNegocioException("No se puede pasar de " + estado + " a " + nuevo
                     + ": el flujo es Pendiente → Asignado → En proceso → Resuelto");
@@ -245,30 +254,37 @@ public class Reporte {
         }
     }
 
-    // ===================================================== Getters y setters
-    // Solo existen los setters que usan las pruebas o la persistencia; los cambios de negocio
-    // se hacen con los métodos de arriba para que siempre se validen las reglas.
+    // ===================================================== Consultas de solo lectura
+    // No hay setters: el reporte solo cambia con los métodos de negocio de arriba, que validan las reglas.
+    // Estos getters existen para armar la respuesta de la API (ReporteResponse), las notificaciones y las
+    // estadísticas. Las listas se devuelven inmodificables para que nadie pueda agregar o quitar fotos
+    // por fuera de adjuntarFotos() o registrarCierre().
 
     public String getId() { return id; }
-    public void setId(String id) { this.id = id; }
     public String getDescripcion() { return descripcion; }
+    /** Se usa para filtrar la bandeja, buscar duplicados del mismo tipo y contar por tipo en el panel. */
     public TipoResiduo getTipoResiduo() { return tipoResiduo; }
+    /** Se usa para ordenar la bandeja y la lista del operador (primero prioridad Alta). */
     public Prioridad getPrioridad() { return prioridad; }
     public double getLatitud() { return latitud; }
     public double getLongitud() { return longitud; }
     public String getDireccion() { return direccion; }
+    /** Se usa para filtrar por sector y para el ranking de sectores del panel. */
     public String getSector() { return sector; }
+    /** Punto GeoJSON que necesita la consulta de duplicados cercanos del repositorio. */
     public GeoJsonPoint getUbicacion() { return ubicacion; }
-    public List<String> getFotos() { return fotos; }
+    public List<String> getFotos() { return Collections.unmodifiableList(fotos); }
+    /** Se usa para ordenar por antigüedad y para los informes por periodo. */
     public LocalDateTime getFechaReporte() { return fechaReporte; }
-    public void setFechaReporte(LocalDateTime fechaReporte) { this.fechaReporte = fechaReporte; }
     public LocalDateTime getFechaResolucion() { return fechaResolucion; }
-    public void setFechaResolucion(LocalDateTime fechaResolucion) { this.fechaResolucion = fechaResolucion; }
+    /** Estado real del reporte (el que ve el ciudadano es {@link #estadoVisible()}). */
     public EstadoReporte getEstado() { return estado; }
     public String getDescripcionTrabajo() { return descripcionTrabajo; }
-    public List<String> getFotosEvidencia() { return fotosEvidencia; }
+    public List<String> getFotosEvidencia() { return Collections.unmodifiableList(fotosEvidencia); }
+    /** Lo usa Notificaciones para saber a quién avisar y la respuesta para mostrar el nombre. */
     public Ciudadano getCiudadano() { return ciudadano; }
+    /** Operador responsable (puede ser null si aún no se asigna). */
     public Operador getOperador() { return operador; }
-    public Reporte getReporteOriginal() { return reporteOriginal; }
-    public Long getVersion() { return version; }
+    /** Solo se expone el id del reporte original, no el objeto completo. */
+    public String getReporteOriginalId() { return esDuplicado() ? reporteOriginal.getId() : null; }
 }

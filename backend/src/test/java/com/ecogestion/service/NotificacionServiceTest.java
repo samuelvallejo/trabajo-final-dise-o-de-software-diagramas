@@ -14,6 +14,7 @@ import com.ecogestion.repository.ReporteRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,10 +47,10 @@ class NotificacionServiceTest {
                 new EcoGestionProperties.Notificaciones("correo", "no-responder@ecogestion.co", 3), null, null, null, null, null, false);
         servicio = new NotificacionService(notificacionRepository, reporteRepository, usuarioService, canal, propiedades);
 
-        Ciudadano ana = new Ciudadano("Ana", "1", "ana@correo.co", "h");
-        ana.setId("c1");
+        Ciudadano ana = new Ciudadano("Ana", "1", "ana@correo.co", "h", null);
+        ReflectionTestUtils.setField(ana, "id", "c1");
         reporte = new Reporte(LocalDateTime.now(), ana, "Basura");
-        reporte.setId("r1");
+        ReflectionTestUtils.setField(reporte, "id", "r1");
         reporte.clasificar(TipoResiduo.DOMESTICO, Prioridad.BAJA);
         Operador luis = new Operador("Luis", "2", "luis@correo.co", "h");
         reporte.asignar(luis);
@@ -80,10 +81,10 @@ class NotificacionServiceTest {
     @Test
     @DisplayName("HU-06/HU-11: los ciudadanos de los duplicados también reciben la notificación")
     void notificaDuplicados() {
-        Ciudadano pedro = new Ciudadano("Pedro", "3", "pedro@correo.co", "h");
-        pedro.setId("c2");
+        Ciudadano pedro = new Ciudadano("Pedro", "3", "pedro@correo.co", "h", null);
+        ReflectionTestUtils.setField(pedro, "id", "c2");
         Reporte duplicado = new Reporte(LocalDateTime.now(), pedro, "Misma basura");
-        duplicado.setId("r2");
+        ReflectionTestUtils.setField(duplicado, "id", "r2");
         when(reporteRepository.findByReporteOriginal(reporte)).thenReturn(List.of(duplicado));
         when(usuarioService.obtenerCorreoDelCiudadano("c2")).thenReturn("pedro@correo.co");
         List<Notificacion> enviadas = servicio.notificarCambioEstado(reporte);

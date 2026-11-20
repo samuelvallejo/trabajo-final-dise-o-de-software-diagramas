@@ -105,20 +105,29 @@ package "model" #FFFFFF {
     - version : Long
     --
     + Reporte(fechaReporte : LocalDateTime, ciudadano : Ciudadano, descripcion : String)
+    + registrarUbicacion(latitud : double, longitud : double, direccion : String, sector : String) : void
+    + adjuntarFotos(urls : List<String>) : void
     + clasificar(tipo : TipoResiduo, prioridad : Prioridad) : void
-    + estaPendiente() : boolean
     + asignar(operador : Operador) : void
-    + cambiarEstado(nuevo : EstadoReporte) : void
-    + marcarComoDuplicado(original : Reporte) : void
+    + reasignar(operador : Operador) : void
+    + iniciarAtencion() : void
     + registrarCierre(descripcion : String, evidencias : List<String>) : void
+    + marcarComoDuplicado(original : Reporte) : void
+    + desvincularDuplicado() : void
+    - cambiarEstado(nuevo : EstadoReporte) : void
+    .. consultas de solo lectura (ReporteResponse, notificaciones, estadísticas) ..
     + getId() : String
-    + setId(id : String) : void
-    + getFechaReporte() : LocalDateTime
-    + getFechaResolucion() : LocalDateTime
     + getEstado() : EstadoReporte
+    + estadoVisible() : EstadoReporte
+    + estaPendiente() : boolean
+    + getPrioridad() : Prioridad
+    + getTipoResiduo() : TipoResiduo
+    + getUbicacion() : GeoJsonPoint
+    + getFechaReporte() : LocalDateTime
+    + getFotos() : List<String> {readOnly}
     + getCiudadano() : Ciudadano
     + getOperador() : Operador
-    + getVersion() : Long
+    + getReporteOriginalId() : String
   }
   abstract class Usuario {
     # id : String
@@ -127,20 +136,30 @@ package "model" #FFFFFF {
     # correo : String
     # contrasenaHash : String
     # intentosFallidos : int
+    # bloqueadoHasta : LocalDateTime
     --
     + {abstract} getRol() : Rol
+    + cambiarContrasena(actual : String, nueva : String, cifrador : PasswordEncoder) : void
     + estaBloqueado(ahora : LocalDateTime) : boolean
+    + registrarIntentoFallido(ahora : LocalDateTime, maximo : int, minutos : int) : void
+    + tieneIntentosFallidos() : boolean
+    + reiniciarIntentos() : void
+    # actualizarNombreYCorreo(nombre : String, correo : String) : void
+    .. consultas de solo lectura ..
     + getId() : String
     + getNombre() : String
+    + getDocumento() : String
     + getCorreo() : String
+    + getContrasenaHash() : String {solo Spring Security}
   }
   class Ciudadano <<Document>> {
     - sector : String
     --
-    + Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String)
+    + Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String, sector : String)
     + getRol() : Rol
+    + actualizarPerfil(nombre : String, correo : String, sector : String) : void
+    .. consultas de solo lectura ..
     + getSector() : String
-    + setSector(sector : String) : void
   }
   class Operador <<Document>> {
     - disponible : boolean
@@ -149,8 +168,19 @@ package "model" #FFFFFF {
     + getRol() : Rol
     + marcarOcupado() : void
     + marcarDisponible() : void
+    .. consultas de solo lectura ..
     + isDisponible() : boolean
   }
+  note as Encapsulamiento
+    <b>Encapsulamiento</b>
+    Las clases del modelo no tienen setters.
+    Spring Data guarda y lee los atributos por
+    reflexión, así que no los necesita. Cada cambio
+    pasa por un método que valida la regla (asignar,
+    registrarCierre, actualizarPerfil, cambiarContrasena).
+    Los get existen para armar los DTO de respuesta;
+    las listas se devuelven inmodificables.
+  end note
 }
 
 ReporteController --> "1" ReporteService

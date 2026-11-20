@@ -12,6 +12,8 @@ import org.springframework.data.mongodb.core.mapping.Document;
  *   <li><b>Experto en información:</b> el operador sabe si está disponible y es quien cambia ese dato
  *       (solo se asignan reportes a operadores disponibles, HU-07).</li>
  * </ul>
+ * <p><b>Encapsulamiento:</b> no hay {@code setDisponible(boolean)}; se usan {@link #marcarOcupado()} y
+ * {@link #marcarDisponible()}, que dicen exactamente qué pasa.
  */
 @Document("operadores")
 public class Operador extends Usuario {
@@ -39,5 +41,6 @@ public class Operador extends Usuario {
         this.disponible = true;
     }
 
+    /** Consulta de solo lectura: se revisa antes de asignar y se muestra en la lista de operadores. */
     public boolean isDisponible() { return disponible; }
 }

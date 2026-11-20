@@ -1,0 +1,177 @@
+@startuml 04-vista-desarrollo
+' EcoGestión – Vista de desarrollo (organización del código por capas y módulos)
+' Flechas punteadas = dependencia de uso entre clases/módulos de implementación.
+skinparam dpi 110
+skinparam defaultFontName Arial
+skinparam defaultFontSize 13
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam nodesep 30
+skinparam ranksep 55
+skinparam class {
+  BackgroundColor #E6E6E6
+  BorderColor #555555
+  BorderThickness 1.6
+  ArrowColor #222222
+  ArrowThickness 1.2
+}
+skinparam package {
+  BorderColor #1B5E20
+  FontColor #1B5E20
+  FontSize 14
+}
+hide circle
+' clases "espaciadoras" invisibles: evitan que las flechas crucen el título de cada paquete
+skinparam class<<espacio>> {
+  BackgroundColor transparent
+  BorderColor transparent
+  FontColor transparent
+}
+hide <<espacio>> stereotype
+hide empty members
+
+package "presentacion" as P {
+  class AppWeb <<React>> {
+    PanelAdministrativoView
+    ReportesView / MapaView
+    + iniciarSesion()
+  }
+  class AppMovil <<React Native>> {
+    CrearReporteScreen
+    MisReportesScreen / AtencionScreen
+    + obtenerGPS()
+  }
+  class ApiClienteHttp {
+    tokenJwt
+    + get() / post() / put()
+  }
+}
+
+package "controladores" as C {
+  class "____________" as espC <<espacio>>
+  class UsuarioController {
+    + registrar() / login()
+    + actualizarPerfil()
+  }
+  class ReporteController {
+    + crear() / historial()
+    + clasificar() / vincularDuplicado()
+  }
+  class AsignacionController {
+    + asignar() / misAsignados()
+    + cambiarEstado() / cerrar()
+  }
+  class HorarioRutaController {
+    + porSector() / actualizar()
+  }
+  class PuntoRecoleccionController {
+    + listar() / actualizar()
+  }
+  class ContenidoEducativoController {
+    + listar() / publicar()
+  }
+  class EstadisticaController {
+    + panel() / informe()
+  }
+}
+
+package "servicios" as S {
+  class "____________" as espS <<espacio>>
+  class UsuarioService {
+    + autenticar()
+  }
+  class ReporteService {
+    + crearReporte()
+    + buscarDuplicados()
+  }
+  class ClasificacionService {
+    + calcularPrioridad()
+  }
+  class AsignacionService {
+    + asignar()  «sin doble asignación»
+    + actualizarEstado()
+  }
+  class NotificacionService {
+    + notificarCambioEstado()
+  }
+  class HorarioRutaService {
+    + consultarPorSector()
+  }
+  class PuntoRecoleccionService {
+    + puntosPorMaterial()
+  }
+  class ContenidoEducativoService {
+    + publicar()
+  }
+  class EstadisticaService {
+    + generarInforme()
+  }
+}
+
+package "repositorios" as R {
+  class "____________" as espR <<espacio>>
+  class UsuarioRepository
+  class ReporteRepository
+  class TipoResiduoRepository
+  class AsignacionRepository
+  class NotificacionRepository
+  class SectorRutaRepository
+  class PuntoRecoleccionRepository
+  class ContenidoEducativoRepository
+}
+
+package "integraciones" as I {
+  class "____________" as espI <<espacio>>
+  interface CanalNotificacion <<interface>> {
+    + enviar(notificacion)
+  }
+  class CanalCorreo <<SMTP>>
+  class MapasClient <<API de mapas>>
+  class AlmacenamientoImagenesS3 <<Amazon S3>>
+}
+
+' ---------- presentación -> API ----------
+AppWeb ..> ApiClienteHttp
+AppMovil ..> ApiClienteHttp
+ApiClienteHttp ..> UsuarioController
+ApiClienteHttp ..> ReporteController
+ApiClienteHttp ..> AsignacionController
+ApiClienteHttp ..> HorarioRutaController
+ApiClienteHttp ..> PuntoRecoleccionController
+ApiClienteHttp ..> ContenidoEducativoController
+ApiClienteHttp ..> EstadisticaController
+
+' ---------- controladores -> servicios ----------
+UsuarioController ..> UsuarioService
+ReporteController ..> ReporteService
+ReporteController ..> ClasificacionService
+AsignacionController ..> AsignacionService
+HorarioRutaController ..> HorarioRutaService
+PuntoRecoleccionController ..> PuntoRecoleccionService
+ContenidoEducativoController ..> ContenidoEducativoService
+EstadisticaController ..> EstadisticaService
+
+' ---------- servicios -> servicios ----------
+AsignacionService ..> NotificacionService
+ReporteService .> ClasificacionService
+
+' ---------- servicios -> repositorios ----------
+UsuarioService ..> UsuarioRepository
+ReporteService ..> ReporteRepository
+ClasificacionService ..> TipoResiduoRepository
+AsignacionService ..> AsignacionRepository
+AsignacionService ..> ReporteRepository
+NotificacionService ..> NotificacionRepository
+HorarioRutaService ..> SectorRutaRepository
+PuntoRecoleccionService ..> PuntoRecoleccionRepository
+ContenidoEducativoService ..> ContenidoEducativoRepository
+EstadisticaService ..> ReporteRepository
+
+' ---------- servicios -> integraciones ----------
+NotificacionService ..> CanalNotificacion
+CanalNotificacion <|.. CanalCorreo
+ReporteService ..> MapasClient
+PuntoRecoleccionService ..> MapasClient
+ReporteService ..> AlmacenamientoImagenesS3
+AsignacionService ..> AlmacenamientoImagenesS3
+@enduml

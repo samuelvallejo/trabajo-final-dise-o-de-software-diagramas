@@ -64,6 +64,8 @@ public class ContenidoEducativo {
         return titulo.toLowerCase().contains(p) || cuerpo.toLowerCase().contains(p);
     }
 
+    // Consultas de solo lectura: no hay setters (los cambios pasan por los métodos de arriba, que validan).
+    // Los getters existen para armar las respuestas de la API.
     public String getId() { return id; }
     public String getTitulo() { return titulo; }
     public CategoriaContenido getCategoria() { return categoria; }
@@ -71,5 +73,4 @@ public class ContenidoEducativo {
     public String getImagenUrl() { return imagenUrl; }
     public boolean isPublicado() { return publicado; }
     public LocalDateTime getFechaPublicacion() { return fechaPublicacion; }
-    public String getAutorId() { return autorId; }
 }

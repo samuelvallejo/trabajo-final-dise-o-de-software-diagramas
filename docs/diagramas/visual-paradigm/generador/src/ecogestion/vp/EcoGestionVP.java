@@ -423,11 +423,11 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
             at.setVisibility(protegido ? IAttribute.VISIBILITY_PROTECTED : IAttribute.VISIBILITY_PRIVATE);
         }
         if (ops != null) for (String o : ops) {
-            boolean privada = o.startsWith("-");
-            operacion(c, privada ? o.substring(1) : o);
-            if (privada) {
+            boolean privada = o.startsWith("-"), protegida = o.startsWith("#");
+            operacion(c, privada || protegida ? o.substring(1) : o);
+            if (privada || protegida) {
                 IOperation[] arr = c.toOperationArray();
-                arr[arr.length - 1].setVisibility(IOperation.VISIBILITY_PRIVATE);
+                arr[arr.length - 1].setVisibility(privada ? IOperation.VISIBILITY_PRIVATE : IOperation.VISIBILITY_PROTECTED);
             }
         }
         m.put(nombre, c);
@@ -462,6 +462,20 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
         return c;
     }
 
+    /** Nota UML; se ubica donde PlantUML dibujó la nota del mismo nombre (o en la posición indicada). */
+    private void nota(String key, String texto, int x, int y, int w, int h) {
+        INOTE n = f.createNOTE();
+        n.setDescription(texto);
+        Rectangle r = pos.get(key);
+        IShapeUIModel s = forma("nota:" + key, n, r != null ? r.x : x, r != null ? r.y : y, w, h);
+        estilo(s, new Color(255, 253, 220), 12, false);
+    }
+
+    private static final String NOTA_ENCAPSULAMIENTO = "Encapsulamiento: no hay métodos set. Los atributos solo cambian "
+            + "con métodos que validan las reglas (asignar, registrarCierre, actualizarPerfil, cambiarContrasena; "
+            + "cambiarEstado es privado). Los get son de solo lectura, existen para mostrar datos y las listas "
+            + "se devuelven inmodificables.";
+
     /** Generalización UML: la subclase hereda de la superclase. */
     private void generalizacion(String superclase, String subclase) {
         IGeneralization g = f.createGeneralization();
@@ -488,35 +502,34 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
         nuevo(IDiagramTypeConstants.DIAGRAM_TYPE_CLASS_DIAGRAM, "3. Vista lógica – Modelo de clases inicial");
         claseEn(null, "GestorReportes", null, new String[]{
                 "ciudadanos : List<Ciudadano>", "operadores : List<Operador>", "reportes : List<Reporte>"}, new String[]{
-                "GestorReportes()", "registrarReporte(c : Ciudadano, descripcion : String) : Reporte",
-                "getCiudadanos() : List<Ciudadano>", "setCiudadanos(ciudadanos : List<Ciudadano>) : void",
-                "getOperadores() : List<Operador>", "setOperadores(operadores : List<Operador>) : void",
-                "getReportes() : List<Reporte>", "setReportes(reportes : List<Reporte>) : void"});
+                "GestorReportes()", "registrarCiudadano(c : Ciudadano) : void", "registrarOperador(o : Operador) : void",
+                "registrarReporte(c : Ciudadano, descripcion : String) : Reporte",
+                "asignarReporte(r : Reporte, o : Operador) : void",
+                "consultarReportes() : List<Reporte>", "consultarOperadoresDisponibles() : List<Operador>"});
         claseEn(null, "Ciudadano", null, new String[]{"id : String", "nombre : String", "documento : String", "correo : String", "contrasenaHash : String", "sector : String"},
-                new String[]{"Ciudadano(id : String, nombre : String, documento : String, correo : String)",
-                        "getId() : String", "setId(id : String) : void", "getNombre() : String", "setNombre(nombre : String) : void",
-                        "getDocumento() : String", "setDocumento(documento : String) : void",
-                        "getCorreo() : String", "setCorreo(correo : String) : void",
-                        "getSector() : String", "setSector(sector : String) : void"});
+                new String[]{"Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String, sector : String)",
+                        "actualizarPerfil(nombre : String, correo : String, sector : String) : void",
+                        "cambiarContrasena(actual : String, nueva : String) : void",
+                        "getId() : String", "getNombre() : String", "getCorreo() : String", "getSector() : String"});
         claseEn(null, "Operador", null, new String[]{"id : String", "nombre : String", "disponible : boolean"},
-                new String[]{"Operador(id : String, nombre : String, disponible : boolean)",
-                        "getId() : String", "setId(id : String) : void", "getNombre() : String", "setNombre(nombre : String) : void",
-                        "isDisponible() : boolean", "setDisponible(valor : boolean) : void", "marcarOcupado() : void"});
+                new String[]{"Operador(nombre : String)", "marcarOcupado() : void", "marcarDisponible() : void",
+                        "getId() : String", "getNombre() : String", "isDisponible() : boolean"});
         claseEn(null, "Reporte", null, new String[]{"id : String", "descripcion : String", "tipoResiduo : TipoResiduo", "prioridad : Prioridad", "latitud : double", "longitud : double", "direccion : String", "sector : String", "fotos : List<String>", "fechaReporte : LocalDateTime",
                         "fechaResolucion : LocalDateTime [0..1]", "estado : EstadoReporte", "descripcionTrabajo : String [0..1]",
                         "fotosEvidencia : List<String>", "ciudadano : Ciudadano", "operador : Operador [0..1]",
                         "reporteOriginal : Reporte [0..1]"},
-                new String[]{"Reporte(id : String, fecha : LocalDateTime, ciudadano : Ciudadano, descripcion : String)",
-                        "cambiarEstado(nuevo : EstadoReporte) : void", "marcarComoDuplicado(original : Reporte) : void", "registrarCierre(descripcion : String, fotos : List<String>) : void", "getId() : String", "setId(id : String) : void", "getDescripcion() : String",
-                        "setDescripcion(descripcion : String) : void", "getFechaReporte() : LocalDateTime",
-                        "setFechaReporte(fecha : LocalDateTime) : void", "getFechaResolucion() : LocalDateTime",
-                        "setFechaResolucion(fecha : LocalDateTime) : void", "getTipoResiduo() : TipoResiduo", "setTipoResiduo(tipo : TipoResiduo) : void",
-                        "getPrioridad() : Prioridad", "setPrioridad(prioridad : Prioridad) : void",
-                        "getEstado() : EstadoReporte", "setEstado(estado : EstadoReporte) : void",
-                        "getCiudadano() : Ciudadano", "setCiudadano(ciudadano : Ciudadano) : void",
-                        "getOperador() : Operador", "setOperador(operador : Operador) : void"});
+                new String[]{"Reporte(fecha : LocalDateTime, ciudadano : Ciudadano, descripcion : String)",
+                        "registrarUbicacion(latitud : double, longitud : double, direccion : String, sector : String) : void",
+                        "adjuntarFotos(urls : List<String>) : void", "clasificar(tipo : TipoResiduo, prioridad : Prioridad) : void",
+                        "asignar(operador : Operador) : void", "iniciarAtencion() : void",
+                        "registrarCierre(descripcion : String, evidencias : List<String>) : void",
+                        "marcarComoDuplicado(original : Reporte) : void", "-cambiarEstado(nuevo : EstadoReporte) : void",
+                        "getId() : String", "getDescripcion() : String", "getEstado() : EstadoReporte",
+                        "estadoVisible() : EstadoReporte", "getPrioridad() : Prioridad",
+                        "getFechaReporte() : LocalDateTime", "getFotos() : List<String> {readOnly}"});
         cargarLayout("03-vista-logica.csv", 1.0);
         dibujarClases(0.85, Color.WHITE);
+        nota("Encapsulamiento", NOTA_ENCAPSULAMIENTO, 1290, 110, 400, 150);
         asociacion("GestorReportes", "Ciudadano", "registra", null, "1", "0..*");
         asociacion("GestorReportes", "Operador", "administra", null, "1", "0..*");
         IShapeUIModel g = v.get("GestorReportes"), op = v.get("Operador"), rp = v.get("Reporte");
@@ -575,32 +588,42 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
                         "descripcionTrabajo : String [0..1]", "fotosEvidencia : List<String>",
                         "ciudadano : Ciudadano", "operador : Operador [0..1]", "reporteOriginal : Reporte [0..1]", "version : Long"},
                 new String[]{"Reporte(fechaReporte : LocalDateTime, ciudadano : Ciudadano, descripcion : String)",
-                        "clasificar(tipo : TipoResiduo, prioridad : Prioridad) : void",
-                        "estaPendiente() : boolean", "asignar(operador : Operador) : void",
-                        "cambiarEstado(nuevo : EstadoReporte) : void", "marcarComoDuplicado(original : Reporte) : void",
+                        "registrarUbicacion(latitud : double, longitud : double, direccion : String, sector : String) : void",
+                        "adjuntarFotos(urls : List<String>) : void", "clasificar(tipo : TipoResiduo, prioridad : Prioridad) : void",
+                        "asignar(operador : Operador) : void", "reasignar(operador : Operador) : void", "iniciarAtencion() : void",
                         "registrarCierre(descripcion : String, evidencias : List<String>) : void",
-                        "getId() : String", "setId(id : String) : void", "getFechaReporte() : LocalDateTime",
-                        "getFechaResolucion() : LocalDateTime", "getEstado() : EstadoReporte", "getCiudadano() : Ciudadano",
-                        "getOperador() : Operador", "getVersion() : Long"});
+                        "marcarComoDuplicado(original : Reporte) : void", "desvincularDuplicado() : void",
+                        "-cambiarEstado(nuevo : EstadoReporte) : void",
+                        "getId() : String", "getEstado() : EstadoReporte", "estadoVisible() : EstadoReporte",
+                        "estaPendiente() : boolean", "getPrioridad() : Prioridad", "getTipoResiduo() : TipoResiduo",
+                        "getUbicacion() : GeoJsonPoint", "getFechaReporte() : LocalDateTime", "getFotos() : List<String> {readOnly}",
+                        "getCiudadano() : Ciudadano", "getOperador() : Operador", "getReporteOriginalId() : String"});
         IClass usuario = claseEn(pk.get("model"), "Usuario", null, new String[]{"#id : String", "#nombre : String", "#documento : String",
-                        "#correo : String", "#contrasenaHash : String", "#intentosFallidos : int"},
-                new String[]{"getRol() : Rol", "estaBloqueado(ahora : LocalDateTime) : boolean", "getId() : String",
-                        "getNombre() : String", "getCorreo() : String"});
+                        "#correo : String", "#contrasenaHash : String", "#intentosFallidos : int", "#bloqueadoHasta : LocalDateTime"},
+                new String[]{"getRol() : Rol", "cambiarContrasena(actual : String, nueva : String, cifrador : PasswordEncoder) : void",
+                        "estaBloqueado(ahora : LocalDateTime) : boolean",
+                        "registrarIntentoFallido(ahora : LocalDateTime, maximo : int, minutos : int) : void",
+                        "tieneIntentosFallidos() : boolean", "reiniciarIntentos() : void",
+                        "#actualizarNombreYCorreo(nombre : String, correo : String) : void",
+                        "getId() : String", "getNombre() : String", "getDocumento() : String", "getCorreo() : String",
+                        "getContrasenaHash() : String {solo Spring Security}"});
         usuario.setAbstract(true);
         usuario.toOperationArray()[0].setAbstract(true);
         claseEn(pk.get("model"), "Ciudadano", "Document", new String[]{"sector : String"},
-                new String[]{"Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String)",
-                        "getRol() : Rol", "getSector() : String", "setSector(sector : String) : void"});
+                new String[]{"Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String, sector : String)",
+                        "getRol() : Rol", "actualizarPerfil(nombre : String, correo : String, sector : String) : void",
+                        "getSector() : String"});
         claseEn(pk.get("model"), "Operador", "Document", new String[]{"disponible : boolean"},
                 new String[]{"Operador(nombre : String, documento : String, correo : String, contrasenaHash : String)",
                         "getRol() : Rol", "marcarOcupado() : void", "marcarDisponible() : void", "isDisponible() : boolean"});
 
         cargarLayout("04-vista-desarrollo.csv", 1.0);
         dibujarClases(0.85, Color.WHITE);
+        nota("Encapsulamiento", NOTA_ENCAPSULAMIENTO, 2190, 1450, 400, 170);
         // marcos de cada capa (detrás de las clases)
         String[][] miembros = {{"controller", "ReporteController"}, {"service", "ReporteService"},
                 {"repository", "CiudadanoRepository", "OperadorRepository", "ReporteRepository"},
-                {"model", "Reporte", "Usuario", "Ciudadano", "Operador"}};
+                {"model", "Reporte", "Usuario", "Ciudadano", "Operador", "nota:Encapsulamiento"}};
         for (int i = 0; i < miembros.length; i++) {
             String nombre = miembros[i][0];
             int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = 0, maxY = 0;

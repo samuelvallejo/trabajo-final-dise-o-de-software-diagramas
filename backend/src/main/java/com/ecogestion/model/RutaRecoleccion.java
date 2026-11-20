@@ -5,6 +5,7 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 
@@ -62,11 +63,13 @@ public class RutaRecoleccion {
         return sectores.stream().anyMatch(s -> s.equalsIgnoreCase(sector));
     }
 
+    // Consultas de solo lectura: no hay setters (los cambios pasan por los métodos de arriba, que validan).
+    // Los getters existen para armar las respuestas de la API; las colecciones se devuelven inmodificables.
     public String getId() { return id; }
     public String getNombre() { return nombre; }
-    public List<String> getSectores() { return sectores; }
-    public List<HorarioRecoleccion> getHorarios() { return horarios; }
-    public List<Coordenada> getRecorrido() { return recorrido; }
+    public List<String> getSectores() { return Collections.unmodifiableList(sectores); }
+    public List<HorarioRecoleccion> getHorarios() { return Collections.unmodifiableList(horarios); }
+    public List<Coordenada> getRecorrido() { return Collections.unmodifiableList(recorrido); }
 
     /** Punto del recorrido de la ruta. */
     public record Coordenada(double latitud, double longitud) { }

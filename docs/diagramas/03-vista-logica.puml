@@ -23,13 +23,13 @@ class GestorReportes {
   - reportes : List<Reporte>
   --
   + GestorReportes()
+  + registrarCiudadano(c : Ciudadano) : void
+  + registrarOperador(o : Operador) : void
   + registrarReporte(c : Ciudadano, descripcion : String) : Reporte
-  + getCiudadanos() : List<Ciudadano>
-  + setCiudadanos(ciudadanos : List<Ciudadano>) : void
-  + getOperadores() : List<Operador>
-  + setOperadores(operadores : List<Operador>) : void
-  + getReportes() : List<Reporte>
-  + setReportes(reportes : List<Reporte>) : void
+  + asignarReporte(r : Reporte, o : Operador) : void
+  .. consultas de solo lectura ..
+  + consultarReportes() : List<Reporte>
+  + consultarOperadoresDisponibles() : List<Operador>
 }
 
 class Ciudadano {
@@ -40,17 +40,14 @@ class Ciudadano {
   - contrasenaHash : String
   - sector : String
   --
-  + Ciudadano(id : String, nombre : String, documento : String, correo : String)
+  + Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String, sector : String)
+  + actualizarPerfil(nombre : String, correo : String, sector : String) : void
+  + cambiarContrasena(actual : String, nueva : String) : void
+  .. consultas de solo lectura ..
   + getId() : String
-  + setId(id : String) : void
   + getNombre() : String
-  + setNombre(nombre : String) : void
-  + getDocumento() : String
-  + setDocumento(documento : String) : void
   + getCorreo() : String
-  + setCorreo(correo : String) : void
   + getSector() : String
-  + setSector(sector : String) : void
 }
 
 class Operador {
@@ -58,14 +55,13 @@ class Operador {
   - nombre : String
   - disponible : boolean
   --
-  + Operador(id : String, nombre : String, disponible : boolean)
-  + getId() : String
-  + setId(id : String) : void
-  + getNombre() : String
-  + setNombre(nombre : String) : void
-  + isDisponible() : boolean
-  + setDisponible(valor : boolean) : void
+  + Operador(nombre : String)
   + marcarOcupado() : void
+  + marcarDisponible() : void
+  .. consultas de solo lectura ..
+  + getId() : String
+  + getNombre() : String
+  + isDisponible() : boolean
 }
 
 class Reporte {
@@ -87,29 +83,34 @@ class Reporte {
   - operador : Operador [0..1]
   - reporteOriginal : Reporte [0..1]
   --
-  + Reporte(id : String, fecha : LocalDateTime, ciudadano : Ciudadano, descripcion : String)
-  + cambiarEstado(nuevo : EstadoReporte) : void
+  + Reporte(fecha : LocalDateTime, ciudadano : Ciudadano, descripcion : String)
+  + registrarUbicacion(latitud : double, longitud : double, direccion : String, sector : String) : void
+  + adjuntarFotos(urls : List<String>) : void
+  + clasificar(tipo : TipoResiduo, prioridad : Prioridad) : void
+  + asignar(operador : Operador) : void
+  + iniciarAtencion() : void
+  + registrarCierre(descripcion : String, evidencias : List<String>) : void
   + marcarComoDuplicado(original : Reporte) : void
-  + registrarCierre(descripcion : String, fotos : List<String>) : void
+  - cambiarEstado(nuevo : EstadoReporte) : void
+  .. consultas de solo lectura ..
   + getId() : String
-  + setId(id : String) : void
   + getDescripcion() : String
-  + setDescripcion(descripcion : String) : void
-  + getFechaReporte() : LocalDateTime
-  + setFechaReporte(fecha : LocalDateTime) : void
-  + getFechaResolucion() : LocalDateTime
-  + setFechaResolucion(fecha : LocalDateTime) : void
-  + getTipoResiduo() : TipoResiduo
-  + setTipoResiduo(tipo : TipoResiduo) : void
-  + getPrioridad() : Prioridad
-  + setPrioridad(prioridad : Prioridad) : void
   + getEstado() : EstadoReporte
-  + setEstado(estado : EstadoReporte) : void
-  + getCiudadano() : Ciudadano
-  + setCiudadano(ciudadano : Ciudadano) : void
-  + getOperador() : Operador
-  + setOperador(operador : Operador) : void
+  + estadoVisible() : EstadoReporte
+  + getPrioridad() : Prioridad
+  + getFechaReporte() : LocalDateTime
+  + getFotos() : List<String> {readOnly}
 }
+
+note as Encapsulamiento
+  <b>Encapsulamiento</b>
+  No hay métodos set: los atributos solo cambian con
+  métodos que validan las reglas del caso de estudio
+  (p. ej. <i>asignar()</i> impide dos operadores y
+  <i>cambiarEstado()</i> es privado para no saltar estados).
+  Los get son de solo lectura y existen para mostrar
+  datos; las listas se devuelven inmodificables.
+end note
 
 GestorReportes "1" -- "0..*" Ciudadano : registra
 GestorReportes "1" -- "0..*" Operador : administra

@@ -3,6 +3,8 @@ package com.ecogestion.model;
 import com.ecogestion.excepcion.DatosInvalidosException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -18,7 +20,7 @@ class ReglasDominioTest {
     @Test
     @DisplayName("HU-01: la cuenta se bloquea 15 minutos tras 5 intentos fallidos")
     void bloqueoPorIntentosFallidos() {
-        Ciudadano ciudadano = new Ciudadano("Ana", "123", "Ana@Correo.co", "hash");
+        Ciudadano ciudadano = new Ciudadano("Ana", "123", "Ana@Correo.co", "hash", null);
         LocalDateTime ahora = LocalDateTime.of(2026, 11, 19, 10, 0);
         for (int i = 0; i < 4; i++) {
             ciudadano.registrarIntentoFallido(ahora, 5, 15);
@@ -77,5 +79,27 @@ class ReglasDominioTest {
         assertThat(EstadoReporte.PENDIENTE.puedeAvanzarA(EstadoReporte.ASIGNADO)).isTrue();
         assertThat(EstadoReporte.ASIGNADO.puedeAvanzarA(EstadoReporte.RESUELTO)).isFalse();
         assertThat(EstadoReporte.EN_PROCESO.puedeAvanzarA(EstadoReporte.ASIGNADO)).isFalse();
+    }
+
+    @Test
+    @DisplayName("Encapsulamiento: la contraseña solo cambia si se conoce la actual")
+    void cambioDeContrasenaExigeLaActual() {
+        PasswordEncoder cifrador = new BCryptPasswordEncoder();
+        Ciudadano ciudadano = new Ciudadano("Ana", "123", "ana@correo.co", cifrador.encode("clave1234"), null);
+        assertThatThrownBy(() -> ciudadano.cambiarContrasena("otraClave1", "nueva1234", cifrador))
+                .isInstanceOf(DatosInvalidosException.class);
+        ciudadano.cambiarContrasena("clave1234", "nueva1234", cifrador);
+        assertThat(cifrador.matches("nueva1234", ciudadano.getContrasenaHash())).isTrue();
+    }
+
+    @Test
+    @DisplayName("Encapsulamiento: las fotos del reporte no se pueden modificar desde fuera")
+    void fotosDeSoloLectura() {
+        Ciudadano ciudadano = new Ciudadano("Ana", "123", "ana@correo.co", "hash", null);
+        Reporte reporte = new Reporte(LocalDateTime.now(), ciudadano, "Basura en la esquina");
+        reporte.adjuntarFotos(List.of("/api/imagenes/1"));
+        assertThatThrownBy(() -> reporte.getFotos().add("/api/imagenes/falsa"))
+                .isInstanceOf(UnsupportedOperationException.class);
+        assertThat(reporte.getFotos()).containsExactly("/api/imagenes/1");
     }
 }

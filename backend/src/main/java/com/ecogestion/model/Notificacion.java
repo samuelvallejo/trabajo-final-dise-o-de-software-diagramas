@@ -53,8 +53,9 @@ public class Notificacion {
         this.canal = nombreCanal;
     }
 
+    // Consultas de solo lectura: no hay setters (los cambios pasan por los métodos de arriba, que validan).
+    // Los getters existen para armar las respuestas de la API.
     public String getId() { return id; }
-    public String getDestinatarioId() { return destinatarioId; }
     public String getCorreoDestino() { return correoDestino; }
     public String getAsunto() { return asunto; }
     public String getMensaje() { return mensaje; }

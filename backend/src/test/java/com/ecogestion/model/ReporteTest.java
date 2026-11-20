@@ -5,6 +5,7 @@ import com.ecogestion.excepcion.ReglaNegocioException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,18 +22,18 @@ class ReporteTest {
 
     @BeforeEach
     void preparar() {
-        ciudadano = new Ciudadano("Ana", "123", "ana@correo.co", "hash");
-        ciudadano.setId("c1");
+        ciudadano = new Ciudadano("Ana", "123", "ana@correo.co", "hash", null);
+        ReflectionTestUtils.setField(ciudadano, "id", "c1");
         operadorA = new Operador("Luis", "456", "luis@correo.co", "hash");
-        operadorA.setId("o1");
+        ReflectionTestUtils.setField(operadorA, "id", "o1");
         operadorB = new Operador("Marta", "789", "marta@correo.co", "hash");
-        operadorB.setId("o2");
+        ReflectionTestUtils.setField(operadorB, "id", "o2");
         reporte = nuevoReporte("r1", TipoResiduo.DOMESTICO);
     }
 
     private Reporte nuevoReporte(String id, TipoResiduo tipo) {
         Reporte r = new Reporte(LocalDateTime.now(), ciudadano, "Basura acumulada en la esquina");
-        r.setId(id);
+        ReflectionTestUtils.setField(r, "id", id);
         r.clasificar(tipo, tipo.prioridadSugerida());
         r.registrarUbicacion(1.2136, -77.2811, "Centro", "Centro");
         r.adjuntarFotos(List.of("/api/imagenes/1"));
