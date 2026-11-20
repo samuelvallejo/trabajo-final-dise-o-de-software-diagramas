@@ -34,10 +34,10 @@ package "controller" #E8F0FE {
     - reporteService : ReporteService
     --
     + ReporteController(reporteService : ReporteService)
-    + registrarReporte(request : ReporteRequest) : ResponseEntity<ReporteResponse>
+    + registrarReporte(cuenta : CuentaUsuario, request : ReporteRequest, fotos : List<MultipartFile>) : ResponseEntity<ReporteResponse>
     + asignarReporte(id : String, request : AsignacionRequest) : ResponseEntity<ReporteResponse>
-    + listarReportes() : ResponseEntity<List<ReporteResponse>>
-    + obtenerReporte(id : String) : ResponseEntity<ReporteResponse>
+    + listarReportes(cuenta : CuentaUsuario, estado : EstadoReporte, tipoResiduo : TipoResiduo, prioridad : Prioridad, sector : String) : ResponseEntity<List<ReporteResponse>>
+    + obtenerReporte(cuenta : CuentaUsuario, id : String) : ResponseEntity<ReporteResponse>
   }
 }
 
@@ -46,12 +46,15 @@ package "service" #EAF5EA {
     - ciudadanoRepository : CiudadanoRepository
     - operadorRepository : OperadorRepository
     - reporteRepository : ReporteRepository
+    - clasificacionService : ClasificacionService
+    - notificacionService : NotificacionService
+    - almacenamientoImagenes : AlmacenamientoImagenes
     --
-    + ReporteService(ciudadanoRepository : CiudadanoRepository, operadorRepository : OperadorRepository, reporteRepository : ReporteRepository)
-    + registrarReporte(request : ReporteRequest) : ReporteResponse
-    + asignarReporte(id : String, operadorId : String) : ReporteResponse
-    + listarReportes() : List<ReporteResponse>
-    + obtenerReporte(id : String) : ReporteResponse
+    + ReporteService(ciudadanoRepository : CiudadanoRepository, operadorRepository : OperadorRepository, reporteRepository : ReporteRepository, ...)
+    + registrarReporte(request : ReporteRequest, fotos : List<MultipartFile>, ciudadanoId : String) : ReporteResponse
+    + asignarReporte(id : String, operadorId : String, reasignar : boolean) : ReporteResponse
+    + listarReportes(usuarioId : String, rol : Rol, filtro : FiltroReportes) : List<ReporteResponse>
+    + obtenerReporte(id : String, usuarioId : String, rol : Rol) : ReporteResponse
     - validarDisponibilidad(operador : Operador) : void
   }
 }
@@ -59,19 +62,23 @@ package "service" #EAF5EA {
 package "repository" #FDF3E6 {
   interface ReporteRepository <<interface>> {
     .. extends MongoRepository<Reporte, String> ..
-    + findAll() : List<Reporte>
     + findById(id : String) : Optional<Reporte>
     + save(reporte : Reporte) : Reporte
-    + findByEstado(estado : String) : List<Reporte>
+    + findByEstado(estado : EstadoReporte) : List<Reporte>
+    + findByCiudadanoOrderByFechaReporteDesc(ciudadano : Ciudadano) : List<Reporte>
+    + countByOperadorAndEstadoNot(operador : Operador, estado : EstadoReporte) : long
+    + buscarAbiertosCercanos(punto : GeoJsonPoint, metros : double, tipo : TipoResiduo) : List<Reporte>
   }
   interface CiudadanoRepository <<interface>> {
     .. extends MongoRepository<Ciudadano, String> ..
     + findById(id : String) : Optional<Ciudadano>
+    + findByCorreo(correo : String) : Optional<Ciudadano>
   }
   interface OperadorRepository <<interface>> {
     .. extends MongoRepository<Operador, String> ..
     + findById(id : String) : Optional<Operador>
     + save(operador : Operador) : Operador
+    + findByDisponibleTrueOrderByNombreAsc() : List<Operador>
   }
 }
 
@@ -79,16 +86,17 @@ package "model" #FFFFFF {
   class Reporte <<Document>> {
     - id : String
     - descripcion : String
-    - tipoResiduo : String
-    - prioridad : String
+    - tipoResiduo : TipoResiduo
+    - prioridad : Prioridad
     - latitud : double
     - longitud : double
     - direccion : String
     - sector : String
+    - ubicacion : GeoJsonPoint
     - fotos : List<String>
-    - fechaReporte : LocalDate
-    - fechaResolucion : LocalDate [0..1]
-    - estado : String
+    - fechaReporte : LocalDateTime
+    - fechaResolucion : LocalDateTime [0..1]
+    - estado : EstadoReporte
     - descripcionTrabajo : String [0..1]
     - fotosEvidencia : List<String>
     - ciudadano : Ciudadano
@@ -96,59 +104,52 @@ package "model" #FFFFFF {
     - reporteOriginal : Reporte [0..1]
     - version : Long
     --
-    + Reporte(fechaReporte : LocalDate, ciudadano : Ciudadano, descripcion : String)
+    + Reporte(fechaReporte : LocalDateTime, ciudadano : Ciudadano, descripcion : String)
+    + clasificar(tipo : TipoResiduo, prioridad : Prioridad) : void
     + estaPendiente() : boolean
     + asignar(operador : Operador) : void
-    + cambiarEstado(nuevo : String) : void
+    + cambiarEstado(nuevo : EstadoReporte) : void
     + marcarComoDuplicado(original : Reporte) : void
-    + registrarCierre(descripcion : String, fotos : List<String>) : void
+    + registrarCierre(descripcion : String, evidencias : List<String>) : void
     + getId() : String
     + setId(id : String) : void
-    + getDescripcion() : String
-    + setDescripcion(descripcion : String) : void
-    + getFechaReporte() : LocalDate
-    + setFechaReporte(fechaReporte : LocalDate) : void
-    + getFechaResolucion() : LocalDate
-    + setFechaResolucion(fechaResolucion : LocalDate) : void
-    + getEstado() : String
-    + setEstado(estado : String) : void
+    + getFechaReporte() : LocalDateTime
+    + getFechaResolucion() : LocalDateTime
+    + getEstado() : EstadoReporte
     + getCiudadano() : Ciudadano
-    + setCiudadano(ciudadano : Ciudadano) : void
     + getOperador() : Operador
-    + setOperador(operador : Operador) : void
     + getVersion() : Long
   }
+  abstract class Usuario {
+    # id : String
+    # nombre : String
+    # documento : String
+    # correo : String
+    # contrasenaHash : String
+    # intentosFallidos : int
+    --
+    + {abstract} getRol() : Rol
+    + estaBloqueado(ahora : LocalDateTime) : boolean
+    + getId() : String
+    + getNombre() : String
+    + getCorreo() : String
+  }
   class Ciudadano <<Document>> {
-    - id : String
-    - nombre : String
-    - documento : String
-    - correo : String
-    - contrasenaHash : String
     - sector : String
     --
-    + Ciudadano(id : String, nombre : String, documento : String, correo : String)
-    + getId() : String
-    + setId(id : String) : void
-    + getNombre() : String
-    + setNombre(nombre : String) : void
-    + getDocumento() : String
-    + setDocumento(documento : String) : void
-    + getCorreo() : String
-    + setCorreo(correo : String) : void
+    + Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String)
+    + getRol() : Rol
+    + getSector() : String
+    + setSector(sector : String) : void
   }
   class Operador <<Document>> {
-    - id : String
-    - nombre : String
     - disponible : boolean
     --
-    + Operador(id : String, nombre : String, disponible : boolean)
+    + Operador(nombre : String, documento : String, correo : String, contrasenaHash : String)
+    + getRol() : Rol
     + marcarOcupado() : void
+    + marcarDisponible() : void
     + isDisponible() : boolean
-    + setDisponible(valor : boolean) : void
-    + getId() : String
-    + setId(id : String) : void
-    + getNombre() : String
-    + setNombre(nombre : String) : void
   }
 }
 
@@ -160,6 +161,8 @@ ReporteService ..> Reporte : <<create>>
 ReporteRepository ..> Reporte : <<use>>
 CiudadanoRepository ..> Ciudadano : <<use>>
 OperadorRepository ..> Operador : <<use>>
+Usuario <|-- Ciudadano
+Usuario <|-- Operador
 Reporte "0..*" --> "1" Ciudadano : historial
 Reporte "0..*" --> "0..1" Operador : atiende
 Reporte "0..*" --> "0..1" Reporte : duplicadoDe

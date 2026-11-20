@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EcoGestión – API</title>
+    <style>
+        body { font-family: Arial, Helvetica, sans-serif; margin: 0; background: #f6f8f5; color: #1d2b1f; }
+        header { background: #1b5e20; color: #fff; padding: 28px 24px; }
+        header h1 { margin: 0 0 6px; font-size: 28px; }
+        main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+        section { background: #fff; border: 1px solid #dfe7dc; border-radius: 8px; padding: 18px 20px; margin-bottom: 18px; }
+        h2 { font-size: 18px; margin: 0 0 10px; color: #1b5e20; }
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #eef2ec; vertical-align: top; }
+        code { background: #eef4ec; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+        .metodo { font-weight: bold; white-space: nowrap; }
+        .rol { color: #5a6b5c; white-space: nowrap; }
+    </style>
+</head>
+<body>
+<header>
+    <h1>EcoGestión</h1>
+    <div>Reporte y gestión de residuos sólidos en Pasto (Nariño) · Spring Boot + MongoDB</div>
+</header>
+<main>
+    <section>
+        <h2>Cómo usar la API</h2>
+        <p>Inicie sesión con <code>POST /api/auth/login</code> (JSON con <code>correo</code> y <code>contrasena</code>); la
+            sesión queda en la cookie <code>JSESSIONID</code>. También se acepta autenticación HTTP Basic.
+            Los errores se devuelven en formato <em>Problem Details</em>.</p>
+        <p>Tipos de residuo: <span th:each="t, i : ${tipos}"><code th:text="${t}">TIPO</code><span th:if="${!i.last}">, </span></span></p>
+    </section>
+    <section>
+        <h2>Ciudadano</h2>
+        <table>
+            <tr><th>Historia</th><th>Método</th><th>Ruta</th></tr>
+            <tr><td>HU-01 Registro / inicio de sesión</td><td class="metodo">POST</td><td><code>/api/auth/registro</code> · <code>/api/auth/login</code> · <code>/api/auth/logout</code></td></tr>
+            <tr><td>HU-02 Mi perfil</td><td class="metodo">GET · PUT</td><td><code>/api/ciudadanos/yo</code> · <code>/api/ciudadanos/yo/contrasena</code></td></tr>
+            <tr><td>HU-03 / HU-04 Crear reporte con fotos y ubicación</td><td class="metodo">POST multipart</td><td><code>/api/reportes</code> (partes <code>datos</code> JSON y <code>fotos</code>)</td></tr>
+            <tr><td>HU-10 Historial y estado de mis reportes</td><td class="metodo">GET</td><td><code>/api/reportes?estado=</code> · <code>/api/reportes/{id}</code></td></tr>
+            <tr><td>HU-11 Mis notificaciones</td><td class="metodo">GET</td><td><code>/api/ciudadanos/yo/notificaciones</code></td></tr>
+            <tr><td>HU-12 Horarios y rutas</td><td class="metodo">GET</td><td><code>/api/sectores</code> · <code>/api/horarios?sector=</code> · <code>/api/horarios/mi-sector</code></td></tr>
+            <tr><td>HU-13 Puntos de recolección</td><td class="metodo">GET</td><td><code>/api/puntos?material=&amp;sector=&amp;latitud=&amp;longitud=</code> · <code>/api/puntos/mi-sector</code></td></tr>
+            <tr><td>HU-14 Educación ambiental</td><td class="metodo">GET</td><td><code>/api/contenidos?categoria=&amp;q=</code></td></tr>
+        </table>
+    </section>
+    <section>
+        <h2>Administrador</h2>
+        <table>
+            <tr><th>Historia</th><th>Método</th><th>Ruta</th></tr>
+            <tr><td>HU-05 Bandeja de revisión y clasificación</td><td class="metodo">GET · PUT</td><td><code>/api/reportes?tipoResiduo=&amp;prioridad=&amp;sector=</code> · <code>/api/reportes/{id}/clasificacion</code></td></tr>
+            <tr><td>HU-06 Duplicados</td><td class="metodo">GET · PUT · DELETE</td><td><code>/api/reportes/{id}/posibles-duplicados</code> · <code>/api/reportes/{id}/duplicado</code></td></tr>
+            <tr><td>HU-07 Asignar a un operador</td><td class="metodo">GET · PUT</td><td><code>/api/admin/operadores</code> · <code>/api/reportes/{id}/asignacion</code></td></tr>
+            <tr><td>HU-12 Rutas y horarios</td><td class="metodo">POST · PUT</td><td><code>/api/admin/rutas</code></td></tr>
+            <tr><td>HU-13 Puntos de recolección</td><td class="metodo">POST · PUT · DELETE</td><td><code>/api/admin/puntos</code></td></tr>
+            <tr><td>HU-14 Publicar contenido</td><td class="metodo">POST · PUT · DELETE</td><td><code>/api/admin/contenidos</code> · <code>/api/admin/contenidos/{id}/publicacion</code></td></tr>
+            <tr><td>HU-15 Panel e informes</td><td class="metodo">GET</td><td><code>/api/admin/estadisticas/panel</code> · <code>/api/admin/estadisticas/informe?desde=&amp;hasta=</code> · <code>/informe.csv</code></td></tr>
+        </table>
+    </section>
+    <section>
+        <h2>Operador de limpieza</h2>
+        <table>
+            <tr><th>Historia</th><th>Método</th><th>Ruta</th></tr>
+            <tr><td>HU-08 Mis asignaciones</td><td class="metodo">GET</td><td><code>/api/operador/asignaciones?orden=prioridad|fecha</code> · <code>/{id}</code></td></tr>
+            <tr><td>HU-09 Iniciar atención y cerrar con evidencias</td><td class="metodo">POST</td><td><code>/api/operador/asignaciones/{id}/inicio</code> · <code>/{id}/cierre</code> (multipart)</td></tr>
+        </table>
+    </section>
+</main>
+</body>
+</html>

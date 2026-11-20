@@ -416,10 +416,11 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
                 at.setVisibility(IAttribute.VISIBILITY_UNSPECIFIED);
                 continue;
             }
-            String[] t = a.split(":", 2);
+            boolean protegido = a.startsWith("#");
+            String[] t = (protegido ? a.substring(1) : a).split(":", 2);
             at.setName(t[0].trim());
             if (t.length > 1) at.setType(t[1].trim());
-            at.setVisibility(IAttribute.VISIBILITY_PRIVATE);
+            at.setVisibility(protegido ? IAttribute.VISIBILITY_PROTECTED : IAttribute.VISIBILITY_PRIVATE);
         }
         if (ops != null) for (String o : ops) {
             boolean privada = o.startsWith("-");
@@ -461,6 +462,14 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
         return c;
     }
 
+    /** Generalización UML: la subclase hereda de la superclase. */
+    private void generalizacion(String superclase, String subclase) {
+        IGeneralization g = f.createGeneralization();
+        g.setFrom(m.get(superclase));
+        g.setTo(m.get(subclase));
+        conector(g, superclase, subclase, null);
+    }
+
     private void dependenciaEstereotipo(String a, String b, String estereotipo) {
         dependenciaEstereotipo(a, b, estereotipo, null);
     }
@@ -493,17 +502,17 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
                 new String[]{"Operador(id : String, nombre : String, disponible : boolean)",
                         "getId() : String", "setId(id : String) : void", "getNombre() : String", "setNombre(nombre : String) : void",
                         "isDisponible() : boolean", "setDisponible(valor : boolean) : void", "marcarOcupado() : void"});
-        claseEn(null, "Reporte", null, new String[]{"id : String", "descripcion : String", "tipoResiduo : String", "prioridad : String", "latitud : double", "longitud : double", "direccion : String", "sector : String", "fotos : List<String>", "fechaReporte : LocalDate",
-                        "fechaResolucion : LocalDate [0..1]", "estado : String", "descripcionTrabajo : String [0..1]",
+        claseEn(null, "Reporte", null, new String[]{"id : String", "descripcion : String", "tipoResiduo : TipoResiduo", "prioridad : Prioridad", "latitud : double", "longitud : double", "direccion : String", "sector : String", "fotos : List<String>", "fechaReporte : LocalDateTime",
+                        "fechaResolucion : LocalDateTime [0..1]", "estado : EstadoReporte", "descripcionTrabajo : String [0..1]",
                         "fotosEvidencia : List<String>", "ciudadano : Ciudadano", "operador : Operador [0..1]",
                         "reporteOriginal : Reporte [0..1]"},
-                new String[]{"Reporte(id : String, fecha : LocalDate, ciudadano : Ciudadano, descripcion : String)",
-                        "cambiarEstado(nuevo : String) : void", "marcarComoDuplicado(original : Reporte) : void", "registrarCierre(descripcion : String, fotos : List<String>) : void", "getId() : String", "setId(id : String) : void", "getDescripcion() : String",
-                        "setDescripcion(descripcion : String) : void", "getFechaReporte() : LocalDate",
-                        "setFechaReporte(fecha : LocalDate) : void", "getFechaResolucion() : LocalDate",
-                        "setFechaResolucion(fecha : LocalDate) : void", "getTipoResiduo() : String", "setTipoResiduo(tipo : String) : void",
-                        "getPrioridad() : String", "setPrioridad(prioridad : String) : void",
-                        "getEstado() : String", "setEstado(estado : String) : void",
+                new String[]{"Reporte(id : String, fecha : LocalDateTime, ciudadano : Ciudadano, descripcion : String)",
+                        "cambiarEstado(nuevo : EstadoReporte) : void", "marcarComoDuplicado(original : Reporte) : void", "registrarCierre(descripcion : String, fotos : List<String>) : void", "getId() : String", "setId(id : String) : void", "getDescripcion() : String",
+                        "setDescripcion(descripcion : String) : void", "getFechaReporte() : LocalDateTime",
+                        "setFechaReporte(fecha : LocalDateTime) : void", "getFechaResolucion() : LocalDateTime",
+                        "setFechaResolucion(fecha : LocalDateTime) : void", "getTipoResiduo() : TipoResiduo", "setTipoResiduo(tipo : TipoResiduo) : void",
+                        "getPrioridad() : Prioridad", "setPrioridad(prioridad : Prioridad) : void",
+                        "getEstado() : EstadoReporte", "setEstado(estado : EstadoReporte) : void",
                         "getCiudadano() : Ciudadano", "setCiudadano(ciudadano : Ciudadano) : void",
                         "getOperador() : Operador", "setOperador(operador : Operador) : void"});
         cargarLayout("03-vista-logica.csv", 1.0);
@@ -536,54 +545,62 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
         }
         claseEn(pk.get("controller"), "ReporteController", "RestController", new String[]{"reporteService : ReporteService"},
                 new String[]{"ReporteController(reporteService : ReporteService)",
-                        "registrarReporte(request : ReporteRequest) : ResponseEntity<ReporteResponse>",
+                        "registrarReporte(cuenta : CuentaUsuario, request : ReporteRequest, fotos : List<MultipartFile>) : ResponseEntity<ReporteResponse>",
                         "asignarReporte(id : String, request : AsignacionRequest) : ResponseEntity<ReporteResponse>",
-                        "listarReportes() : ResponseEntity<List<ReporteResponse>>",
-                        "obtenerReporte(id : String) : ResponseEntity<ReporteResponse>"});
+                        "listarReportes(cuenta : CuentaUsuario, estado : EstadoReporte, tipoResiduo : TipoResiduo, prioridad : Prioridad, sector : String) : ResponseEntity<List<ReporteResponse>>",
+                        "obtenerReporte(cuenta : CuentaUsuario, id : String) : ResponseEntity<ReporteResponse>"});
         claseEn(pk.get("service"), "ReporteService", "Service", new String[]{"ciudadanoRepository : CiudadanoRepository",
-                        "operadorRepository : OperadorRepository", "reporteRepository : ReporteRepository"},
-                new String[]{"ReporteService(ciudadanoRepository : CiudadanoRepository, operadorRepository : OperadorRepository, reporteRepository : ReporteRepository)",
-                        "registrarReporte(request : ReporteRequest) : ReporteResponse",
-                        "asignarReporte(id : String, operadorId : String) : ReporteResponse",
-                        "listarReportes() : List<ReporteResponse>", "obtenerReporte(id : String) : ReporteResponse",
+                        "operadorRepository : OperadorRepository", "reporteRepository : ReporteRepository",
+                        "clasificacionService : ClasificacionService", "notificacionService : NotificacionService",
+                        "almacenamientoImagenes : AlmacenamientoImagenes"},
+                new String[]{"ReporteService(ciudadanoRepository : CiudadanoRepository, operadorRepository : OperadorRepository, reporteRepository : ReporteRepository, ...)",
+                        "registrarReporte(request : ReporteRequest, fotos : List<MultipartFile>, ciudadanoId : String) : ReporteResponse",
+                        "asignarReporte(id : String, operadorId : String, reasignar : boolean) : ReporteResponse",
+                        "listarReportes(usuarioId : String, rol : Rol, filtro : FiltroReportes) : List<ReporteResponse>",
+                        "obtenerReporte(id : String, usuarioId : String, rol : Rol) : ReporteResponse",
                         "-validarDisponibilidad(operador : Operador) : void"});
         claseEn(pk.get("repository"), "CiudadanoRepository", "interface", new String[]{"extends MongoRepository<Ciudadano, String>"},
-                new String[]{"findById(id : String) : Optional<Ciudadano>"});
+                new String[]{"findById(id : String) : Optional<Ciudadano>", "findByCorreo(correo : String) : Optional<Ciudadano>"});
         claseEn(pk.get("repository"), "OperadorRepository", "interface", new String[]{"extends MongoRepository<Operador, String>"},
-                new String[]{"findById(id : String) : Optional<Operador>", "save(operador : Operador) : Operador"});
+                new String[]{"findById(id : String) : Optional<Operador>", "save(operador : Operador) : Operador",
+                        "findByDisponibleTrueOrderByNombreAsc() : List<Operador>"});
         claseEn(pk.get("repository"), "ReporteRepository", "interface", new String[]{"extends MongoRepository<Reporte, String>"},
-                new String[]{"findAll() : List<Reporte>", "findById(id : String) : Optional<Reporte>",
-                        "save(reporte : Reporte) : Reporte", "findByEstado(estado : String) : List<Reporte>"});
-        claseEn(pk.get("model"), "Reporte", "Document", new String[]{"id : String", "descripcion : String", "tipoResiduo : String", "prioridad : String", "latitud : double", "longitud : double", "direccion : String", "sector : String", "fotos : List<String>", 
-                        "fechaReporte : LocalDate", "fechaResolucion : LocalDate [0..1]", "estado : String",
+                new String[]{"findById(id : String) : Optional<Reporte>", "save(reporte : Reporte) : Reporte",
+                        "findByEstado(estado : EstadoReporte) : List<Reporte>",
+                        "findByCiudadanoOrderByFechaReporteDesc(ciudadano : Ciudadano) : List<Reporte>",
+                        "countByOperadorAndEstadoNot(operador : Operador, estado : EstadoReporte) : long",
+                        "buscarAbiertosCercanos(punto : GeoJsonPoint, metros : double, tipo : TipoResiduo) : List<Reporte>"});
+        claseEn(pk.get("model"), "Reporte", "Document", new String[]{"id : String", "descripcion : String", "tipoResiduo : TipoResiduo", "prioridad : Prioridad", "latitud : double", "longitud : double", "direccion : String", "sector : String", "ubicacion : GeoJsonPoint", "fotos : List<String>",
+                        "fechaReporte : LocalDateTime", "fechaResolucion : LocalDateTime [0..1]", "estado : EstadoReporte",
                         "descripcionTrabajo : String [0..1]", "fotosEvidencia : List<String>",
                         "ciudadano : Ciudadano", "operador : Operador [0..1]", "reporteOriginal : Reporte [0..1]", "version : Long"},
-                new String[]{"Reporte(fechaReporte : LocalDate, ciudadano : Ciudadano, descripcion : String)",
+                new String[]{"Reporte(fechaReporte : LocalDateTime, ciudadano : Ciudadano, descripcion : String)",
+                        "clasificar(tipo : TipoResiduo, prioridad : Prioridad) : void",
                         "estaPendiente() : boolean", "asignar(operador : Operador) : void",
-                        "cambiarEstado(nuevo : String) : void", "marcarComoDuplicado(original : Reporte) : void", "registrarCierre(descripcion : String, fotos : List<String>) : void", 
-                        "getId() : String", "setId(id : String) : void", "getDescripcion() : String",
-                        "setDescripcion(descripcion : String) : void", "getFechaReporte() : LocalDate",
-                        "setFechaReporte(fechaReporte : LocalDate) : void", "getFechaResolucion() : LocalDate",
-                        "setFechaResolucion(fechaResolucion : LocalDate) : void", "getEstado() : String",
-                        "setEstado(estado : String) : void", "getCiudadano() : Ciudadano",
-                        "setCiudadano(ciudadano : Ciudadano) : void", "getOperador() : Operador",
-                        "setOperador(operador : Operador) : void", "getVersion() : Long"});
-        claseEn(pk.get("model"), "Ciudadano", "Document", new String[]{"id : String", "nombre : String", "documento : String", "correo : String", "contrasenaHash : String", "sector : String"},
-                new String[]{"Ciudadano(id : String, nombre : String, documento : String, correo : String)",
-                        "getId() : String", "setId(id : String) : void", "getNombre() : String", "setNombre(nombre : String) : void",
-                        "getDocumento() : String", "setDocumento(documento : String) : void",
-                        "getCorreo() : String", "setCorreo(correo : String) : void"});
-        claseEn(pk.get("model"), "Operador", "Document", new String[]{"id : String", "nombre : String", "disponible : boolean"},
-                new String[]{"Operador(id : String, nombre : String, disponible : boolean)", "marcarOcupado() : void",
-                        "isDisponible() : boolean", "setDisponible(valor : boolean) : void", "getId() : String",
-                        "setId(id : String) : void", "getNombre() : String", "setNombre(nombre : String) : void"});
+                        "cambiarEstado(nuevo : EstadoReporte) : void", "marcarComoDuplicado(original : Reporte) : void",
+                        "registrarCierre(descripcion : String, evidencias : List<String>) : void",
+                        "getId() : String", "setId(id : String) : void", "getFechaReporte() : LocalDateTime",
+                        "getFechaResolucion() : LocalDateTime", "getEstado() : EstadoReporte", "getCiudadano() : Ciudadano",
+                        "getOperador() : Operador", "getVersion() : Long"});
+        IClass usuario = claseEn(pk.get("model"), "Usuario", null, new String[]{"#id : String", "#nombre : String", "#documento : String",
+                        "#correo : String", "#contrasenaHash : String", "#intentosFallidos : int"},
+                new String[]{"getRol() : Rol", "estaBloqueado(ahora : LocalDateTime) : boolean", "getId() : String",
+                        "getNombre() : String", "getCorreo() : String"});
+        usuario.setAbstract(true);
+        usuario.toOperationArray()[0].setAbstract(true);
+        claseEn(pk.get("model"), "Ciudadano", "Document", new String[]{"sector : String"},
+                new String[]{"Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String)",
+                        "getRol() : Rol", "getSector() : String", "setSector(sector : String) : void"});
+        claseEn(pk.get("model"), "Operador", "Document", new String[]{"disponible : boolean"},
+                new String[]{"Operador(nombre : String, documento : String, correo : String, contrasenaHash : String)",
+                        "getRol() : Rol", "marcarOcupado() : void", "marcarDisponible() : void", "isDisponible() : boolean"});
 
         cargarLayout("04-vista-desarrollo.csv", 1.0);
         dibujarClases(0.85, Color.WHITE);
         // marcos de cada capa (detrás de las clases)
         String[][] miembros = {{"controller", "ReporteController"}, {"service", "ReporteService"},
                 {"repository", "CiudadanoRepository", "OperadorRepository", "ReporteRepository"},
-                {"model", "Reporte", "Ciudadano", "Operador"}};
+                {"model", "Reporte", "Usuario", "Ciudadano", "Operador"}};
         for (int i = 0; i < miembros.length; i++) {
             String nombre = miembros[i][0];
             int minX = Integer.MAX_VALUE, minY = Integer.MAX_VALUE, maxX = 0, maxY = 0;
@@ -611,9 +628,11 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
         dependenciaEstereotipo("CiudadanoRepository", "Ciudadano", "use");
         IShapeUIModel orp = v.get("OperadorRepository"), rep = v.get("Reporte"), ope = v.get("Operador");
         int ox = orp.getX() + orp.getWidth() / 2;
-        int oy = rep.getY() + rep.getHeight() + 30;
+        int oy = rep.getY() + rep.getHeight() + 40;
         dependenciaEstereotipo("OperadorRepository", "Operador", "use",
                 pts(ox, orp.getY() + orp.getHeight(), ox, oy, ope.getX() + 40, oy, ope.getX() + 40, ope.getY()));
+        generalizacion("Usuario", "Ciudadano");
+        generalizacion("Usuario", "Operador");
         asociacionDirigida("Reporte", "Ciudadano", "historial", "0..*", "1");
         asociacionDirigida("Reporte", "Operador", "atiende", "0..*", "0..1");
         asociacion("Reporte", "Reporte", "duplicadoDe", null, "0..*", "0..1");
@@ -668,32 +687,29 @@ public class EcoGestionVP implements VPPlugin, VPPluginCommandLineSupport {
         artefacto("opeArt", "vistas del operador (HTML Thymeleaf + JS)", "opeNav", 1015, TOP + 125, 260, 80);
 
         int SX = 400, SY = 360, SW = 560, SH = 250;
-        nodo("srv", "device", "Servidor web/API (Linux · nube)", null, SX, SY, SW, SH);
-        nodo("jvm", "executionEnvironment", "JVM 21 · Spring Boot (Tomcat embebido)", "srv", SX + 20, SY + 65, SW - 45, 165);
-        artefacto("jar", "ecogestion.jar (controladores y servicios)", "jvm", SX + 40, SY + 125, 240, 80);
-        artefacto("tpl", "templates/ + static/ (Thymeleaf, JS, CSS)", "jvm", SX + 295, SY + 125, 220, 80);
+        nodo("srv", "device", "Servidor web/API (Railway)", null, SX, SY, SW, SH);
+        nodo("jvm", "executionEnvironment", "JVM 21 · Spring Boot 4 (Tomcat embebido)", "srv", SX + 20, SY + 65, SW - 45, 165);
+        artefacto("jar", "ecogestion.jar (controller, service, repository)", "jvm", SX + 40, SY + 125, 260, 80);
+        artefacto("tpl", "templates/ (vistas Thymeleaf)", "jvm", SX + 315, SY + 125, 190, 80);
 
-        int BY = 740, BH = 200, BW = 305;
-        int[] xs = {20, 365, 710, 1055};
-        nodo("bd", "device", "Servidor de base de datos", null, xs[0], BY, BW, BH);
-        nodo("mongo", "executionEnvironment", "MongoDB 7", "bd", xs[0] + 15, BY + 60, BW - 35, 125);
-        artefacto("bdArt", "base de datos ecogestion (colecciones + índice 2dsphere)", "mongo", xs[0] + 30, BY + 110, BW - 70, 60);
-        nodo("s3", "device", "Almacenamiento de imágenes (Amazon S3)", null, xs[1], BY, BW, BH);
-        artefacto("s3Art", "bucket ecogestion-fotos", "s3", xs[1] + 45, BY + 95, BW - 90, 70);
-        nodo("smtp", "device", "Servicio de correo electrónico (servidor SMTP)", null, xs[2], BY, BW, BH);
-        artefacto("smtpArt", "relay SMTP", "smtp", xs[2] + 45, BY + 95, BW - 90, 70);
-        nodo("maps", "device", "Servicio de mapas/GPS (Google Maps Platform)", null, xs[3], BY, BW, BH);
-        artefacto("mapsArt", "Maps JavaScript API + Geocoding API", "maps", xs[3] + 45, BY + 95, BW - 90, 70);
+        int BY = 740, BH = 200, BW = 380;
+        int[] xs = {40, 490, 940};
+        nodo("bd", "device", "Servidor de base de datos (Railway)", null, xs[0], BY, BW, BH);
+        nodo("mongo", "executionEnvironment", "MongoDB", "bd", xs[0] + 15, BY + 60, BW - 35, 125);
+        artefacto("bdArt", "ecogestion: colecciones, índices 2dsphere y fotos en GridFS", "mongo", xs[0] + 30, BY + 110, BW - 70, 60);
+        nodo("smtp", "device", "Servicio de correo electrónico (servidor SMTP)", null, xs[1], BY, BW, BH);
+        artefacto("smtpArt", "relay SMTP", "smtp", xs[1] + 80, BY + 95, BW - 160, 70);
+        nodo("maps", "device", "Servicio de mapas/GPS (Google Maps Platform)", null, xs[2], BY, BW, BH);
+        artefacto("mapsArt", "Maps JavaScript API + Geocoding API", "maps", xs[2] + 80, BY + 95, BW - 160, 70);
 
         int top = TOP + TH;
         enlace("ciu", "srv", "HTTPS:443 (HTML/JSON)", new int[]{250, top, 520, SY}, 110, 300, 170, 40);
         enlace("pc", "srv", "HTTPS:443 (HTML/JSON)", new int[]{720, top, 680, SY}, 728, 300, 170, 40);
         enlace("ope", "srv", "HTTPS:443 (HTML/JSON)", new int[]{1150, top, 840, SY}, 1100, 300, 170, 40);
         int sb = SY + SH;
-        enlace("srv", "bd", "MongoDB Wire Protocol / TCP:27017", new int[]{470, sb, xs[0] + BW / 2, BY}, 60, 655, 250, 22);
-        enlace("srv", "s3", "HTTPS:443 (SDK S3)", new int[]{620, sb, xs[1] + BW / 2, BY}, 380, 690, 160, 22);
-        enlace("srv", "smtp", "SMTP/TLS:587", new int[]{760, sb, xs[2] + BW / 2, BY}, 850, 690, 130, 22);
-        enlace("srv", "maps", "HTTPS:443 (Geocoding)", new int[]{900, sb, xs[3] + BW / 2, BY}, 1060, 625, 180, 22);
+        enlace("srv", "bd", "MongoDB Wire Protocol / TCP:27017", new int[]{520, sb, xs[0] + BW / 2, BY}, 60, 655, 250, 22);
+        enlace("srv", "smtp", "SMTP/TLS:587", new int[]{680, sb, xs[1] + BW / 2, BY}, 700, 670, 130, 22);
+        enlace("srv", "maps", "HTTPS:443 (Geocoding)", new int[]{840, sb, xs[2] + BW / 2, BY}, 1010, 640, 180, 22);
         return d;
     }
 }

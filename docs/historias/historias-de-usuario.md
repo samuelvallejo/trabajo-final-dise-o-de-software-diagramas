@@ -42,7 +42,7 @@ Como **ciudadano**, quiero registrarme con mi nombre, documento de identificaci�
 
 ## Notas / reglas de negocio
 - La contraseña se almacena con hash BCrypt en el atributo contrasenaHash de Ciudadano; nunca en texto plano.
-- La sesión se gestiona con Spring Security (sesión HTTP + protección CSRF) en la aplicación Spring Boot; las vistas son Thymeleaf y funcionan en el navegador del PC o del celular.
+- La sesión se gestiona con Spring Security (sesión HTTP con cookie SameSite=Strict, contraseñas con BCrypt y roles CIUDADANO, OPERADOR y ADMINISTRADOR) en la aplicación Spring Boot; las vistas son Thymeleaf y funcionan en el navegador del PC o del celular.
 - Los administradores y operadores no se auto-registran: los crea un administrador.
 
 ## Trazabilidad
@@ -97,7 +97,7 @@ Como **ciudadano**, quiero reportar una acumulación de basura o residuos abando
 
 ## Notas / reglas de negocio
 - Tipos de residuo iniciales: doméstico, escombros, reciclable, voluminoso, peligroso, otro.
-- Las fotos se guardan en el almacenamiento de imágenes (Amazon S3) y en MongoDB solo sus URL, en el atributo fotos del Reporte.
+- Las fotos se guardan en MongoDB GridFS (almacenamiento de imágenes) y el Reporte solo conserva sus URL en el atributo fotos.
 - La ubicación se registra según HU-04.
 
 ## Trazabilidad
@@ -261,7 +261,7 @@ Como **operador de limpieza**, quiero actualizar el estado del reporte mientras 
 
 ## Notas / reglas de negocio
 - Flujo de estados obligatorio: Pendiente → Asignado → En proceso → Resuelto.
-- La descripción y las URL de las fotos de evidencia (Amazon S3) se guardan en los atributos descripcionTrabajo y fotosEvidencia del Reporte (Reporte.registrarCierre).
+- La descripción y las URL de las fotos de evidencia (MongoDB GridFS) se guardan en los atributos descripcionTrabajo y fotosEvidencia del Reporte (Reporte.registrarCierre).
 - Cubre los ítems 9 (actualizar estado) y 10 (registrar cierre) del caso.
 
 ## Trazabilidad
@@ -314,7 +314,7 @@ Como **ciudadano**, quiero recibir una notificación por correo cuando mi report
 **5 puntos de historia**
 
 ## Notas / reglas de negocio
-- Diseño extensible: Notificaciones envía a través de la interfaz requerida "Canal de notificación" (vista funcional); hoy se implementa con correo SMTP y se pueden agregar SMS o push sin modificar el componente (patrón Estrategia).
+- Diseño extensible: Notificaciones envía a través de la interfaz requerida "Canal de notificación" (vista funcional); hoy se implementa con correo SMTP (CanalCorreo) y, si no hay servidor SMTP configurado, con un canal que deja la notificación en el registro de la aplicación (CanalRegistro); se pueden agregar SMS o push sin modificar el componente (patrón Estrategia).
 - El correo del destinatario se obtiene de Gestión de usuarios ("Obtener correo del ciudadano"). Las notificaciones de un reporte original también llegan a los ciudadanos de sus duplicados.
 
 ## Trazabilidad
@@ -411,7 +411,7 @@ Como **administrador**, quiero un panel con indicadores de los reportes y genera
 1. **Dado** que inicio sesión como administrador, **cuando** abro el panel, **entonces** veo el total de reportes, los pendientes, los resueltos y los problemas (tipos de residuo) más frecuentes.
 2. **Dado** el panel, **cuando** consulto la sección de sectores, **entonces** veo un ranking y un mapa de calor de los sectores con mayor acumulación de reportes.
 3. **Dado** que selecciono un rango de fechas y opcionalmente un sector, **cuando** genero el informe, **entonces** obtengo los indicadores de ese periodo, incluido el tiempo promedio de atención.
-4. **Dado** un informe generado, **cuando** pulso "Exportar", **entonces** se descarga en PDF o CSV.
+4. **Dado** un informe generado, **cuando** pulso "Exportar", **entonces** se descarga en formato CSV.
 
 ## Prioridad
 **Media** — Es la base para la toma de decisiones de la entidad, pero requiere que ya existan reportes.

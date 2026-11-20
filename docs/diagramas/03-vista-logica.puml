@@ -71,40 +71,40 @@ class Operador {
 class Reporte {
   - id : String
   - descripcion : String
-  - tipoResiduo : String
-  - prioridad : String
+  - tipoResiduo : TipoResiduo
+  - prioridad : Prioridad
   - latitud : double
   - longitud : double
   - direccion : String
   - sector : String
   - fotos : List<String>
-  - fechaReporte : LocalDate
-  - fechaResolucion : LocalDate [0..1]
-  - estado : String
+  - fechaReporte : LocalDateTime
+  - fechaResolucion : LocalDateTime [0..1]
+  - estado : EstadoReporte
   - descripcionTrabajo : String [0..1]
   - fotosEvidencia : List<String>
   - ciudadano : Ciudadano
   - operador : Operador [0..1]
   - reporteOriginal : Reporte [0..1]
   --
-  + Reporte(id : String, fecha : LocalDate, ciudadano : Ciudadano, descripcion : String)
-  + cambiarEstado(nuevo : String) : void
+  + Reporte(id : String, fecha : LocalDateTime, ciudadano : Ciudadano, descripcion : String)
+  + cambiarEstado(nuevo : EstadoReporte) : void
   + marcarComoDuplicado(original : Reporte) : void
   + registrarCierre(descripcion : String, fotos : List<String>) : void
   + getId() : String
   + setId(id : String) : void
   + getDescripcion() : String
   + setDescripcion(descripcion : String) : void
-  + getFechaReporte() : LocalDate
-  + setFechaReporte(fecha : LocalDate) : void
-  + getFechaResolucion() : LocalDate
-  + setFechaResolucion(fecha : LocalDate) : void
-  + getTipoResiduo() : String
-  + setTipoResiduo(tipo : String) : void
-  + getPrioridad() : String
-  + setPrioridad(prioridad : String) : void
-  + getEstado() : String
-  + setEstado(estado : String) : void
+  + getFechaReporte() : LocalDateTime
+  + setFechaReporte(fecha : LocalDateTime) : void
+  + getFechaResolucion() : LocalDateTime
+  + setFechaResolucion(fecha : LocalDateTime) : void
+  + getTipoResiduo() : TipoResiduo
+  + setTipoResiduo(tipo : TipoResiduo) : void
+  + getPrioridad() : Prioridad
+  + setPrioridad(prioridad : Prioridad) : void
+  + getEstado() : EstadoReporte
+  + setEstado(estado : EstadoReporte) : void
   + getCiudadano() : Ciudadano
   + setCiudadano(ciudadano : Ciudadano) : void
   + getOperador() : Operador

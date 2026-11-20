@@ -9,14 +9,14 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
 |---|---|---|---|---|
 | Registro e inicio de sesión con nombre, documento, correo y contraseña | HU-01 | Gestión de usuarios | `Ciudadano` (nombre, documento, correo, contrasenaHash) | Navegador → Servidor web/API (HTTPS); MongoDB |
 | Consultar y actualizar datos personales | HU-02 | Gestión de usuarios | `Ciudadano` (correo, sector, getters/setters) | MongoDB |
-| Reportar acumulación o residuos abandonados con descripción, tipo y fotos | HU-03 | Gestión de reportes (requiere *Validar ciudadano*) | `Reporte` (descripcion, tipoResiduo, fotos); `GestorReportes.registrarReporte`; `ReporteController/Service.registrarReporte` | Fotos en Amazon S3; URL en MongoDB |
+| Reportar acumulación o residuos abandonados con descripción, tipo y fotos | HU-03 | Gestión de reportes (requiere *Validar ciudadano*) | `Reporte` (descripcion, tipoResiduo, fotos); `GestorReportes.registrarReporte`; `ReporteController/Service.registrarReporte` | Fotos en MongoDB GridFS; URL en el `Reporte` |
 | Ubicación por GPS o seleccionando un punto en el mapa | HU-04 | Gestión de reportes (requiere *Servicio de mapas/GPS* e *Identificar sector*) | `Reporte` (latitud, longitud, direccion, sector) | Sensor GPS del smartphone; Maps JavaScript API + Geocoding API |
 | Clasificación por tipo de problema y prioridad de atención | HU-05 | Clasificación y priorización (*Clasificar y priorizar*) | `Reporte` (tipoResiduo, prioridad); `ReporteRepository.findByEstado` (bandeja de pendientes) | — |
 | Revisar reportes y detectar duplicados | HU-06 | Gestión de reportes | `Reporte.reporteOriginal`, asociación `duplicadoDe`, `marcarComoDuplicado` | Índice 2dsphere de MongoDB |
 | Asignar a un operador sin que varios equipos atiendan lo mismo | HU-07 | Asignación y atención (requiere *Consultar operadores* y *Consultar y actualizar estado del reporte*) | `Reporte.operador [0..1]`, `Reporte.version`, `Operador.disponible`; `ReporteService.asignarReporte / validarDisponibilidad` | — |
 | El operador consulta sus reportes asignados y su ubicación | HU-08 | Asignación y atención | asociación `atiende` (Operador 0..1 — 0..* Reporte) | Smartphone del operador; mapa con Maps JavaScript API |
 | Actualizar estado (pendiente → asignado → en proceso → resuelto) | HU-09 | Asignación y atención | `Reporte.estado`, `cambiarEstado` | — |
-| Registrar el trabajo realizado y fotos de evidencia al terminar | HU-09 | Asignación y atención | `Reporte` (descripcionTrabajo, fotosEvidencia, fechaResolucion), `registrarCierre` | Fotos en Amazon S3 |
+| Registrar el trabajo realizado y fotos de evidencia al terminar | HU-09 | Asignación y atención | `Reporte` (descripcionTrabajo, fotosEvidencia, fechaResolucion), `registrarCierre` | Fotos en MongoDB GridFS |
 | El ciudadano consulta el historial y el estado de sus reportes | HU-10 | Gestión de reportes | asociación `historial` (Ciudadano 1 — 0..* Reporte); `listarReportes / obtenerReporte` | — |
 | Notificaciones al asignar, empezar a atender o resolver (correo, extensible) | HU-11 | Notificaciones (provee *Notificar cambio de estado*; requiere *Obtener correo del ciudadano* y la interfaz externa *Canal de notificación*) | — | Servicio de correo electrónico (SMTP/TLS:587) |
 | Horarios y rutas de recolección por barrio/sector, actualizados por el administrador | HU-12 | Horarios y rutas | `Ciudadano.sector` | — |
@@ -67,3 +67,27 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
   geocodificación (HU-04).
 - Las historias no piden notificaciones dentro de la aplicación. Por eso la vista de contexto solo muestra
   notificaciones por correo electrónico.
+- Los tipos del reporte son enumeraciones: `TipoResiduo`, `Prioridad` y `EstadoReporte`; las fechas son `LocalDateTime`.
+- En el código, `Ciudadano`, `Operador` y `Administrador` heredan de la clase abstracta `Usuario`
+  (nombre, documento, correo, contraseña cifrada con BCrypt y bloqueo tras 5 intentos fallidos).
+  El papel de `GestorReportes` del modelo inicial lo cumple `ReporteService`, usado por el administrador.
+- Las fotos de los reportes y de las evidencias se guardan en MongoDB GridFS dentro de la misma base de datos
+  desplegada en Railway, para no depender de servicios distintos a Spring Boot y MongoDB.
+- Si no se configura un servidor SMTP, las notificaciones se guardan igual en el historial y se escriben en el
+  registro de la aplicación (`CanalRegistro`); con SMTP se envían por correo (`CanalCorreo`).
+
+## 5. Componentes de la vista funcional → código (backend Spring Boot)
+
+| Componente | Servicio (`service`) | Controlador y rutas (`controller`) | Historias |
+|---|---|---|---|
+| Gestión de usuarios | `UsuarioService` | `AuthController` (`/api/auth/registro`, `/login`, `/logout`, `/yo`), `CiudadanoController` (`/api/ciudadanos/yo`, `/contrasena`, `/notificaciones`), `OperadorController` (`/api/admin/operadores`) | HU-01, HU-02, HU-07 |
+| Gestión de reportes | `ReporteService` | `ReporteController` (`POST/GET /api/reportes`, `GET /api/reportes/{id}`, `/posibles-duplicados`, `/duplicado`) | HU-03, HU-04, HU-06, HU-10 |
+| Clasificación y priorización | `ClasificacionService` | `PUT /api/reportes/{id}/clasificacion`, `GET /api/clasificacion/tipos` | HU-05 |
+| Asignación y atención | `ReporteService.asignarReporte`, `AtencionService` | `PUT /api/reportes/{id}/asignacion`, `AtencionController` (`/api/operador/asignaciones`, `/{id}/inicio`, `/{id}/cierre`) | HU-07, HU-08, HU-09 |
+| Notificaciones | `NotificacionService` + `CanalNotificacion` (`CanalCorreo`, `CanalRegistro`) | `GET /api/ciudadanos/yo/notificaciones` | HU-11 |
+| Horarios y rutas | `HorarioRutaService` | `HorarioRutaController` (`/api/sectores`, `/api/horarios`, `/api/horarios/mi-sector`, `/api/admin/rutas`) | HU-12, HU-04 |
+| Puntos de recolección | `PuntoRecoleccionService` | `PuntoRecoleccionController` (`/api/puntos`, `/api/puntos/mi-sector`, `/api/admin/puntos`) | HU-13 |
+| Contenido educativo | `ContenidoEducativoService` | `ContenidoEducativoController` (`/api/contenidos`, `/api/admin/contenidos`) | HU-14 |
+| Estadísticas e informes | `EstadisticaService` | `EstadisticaController` (`/api/admin/estadisticas/panel`, `/informe`, `/informe.csv`) | HU-15 |
+| Servicio de mapas/GPS (externo) | `ServicioMapas` (`GoogleGeocodingServicioMapas`, `CoordenadasServicioMapas`) | — | HU-04 |
+| Almacenamiento de imágenes | `AlmacenamientoImagenes` (`GridFsAlmacenamientoImagenes`) | `GET /api/imagenes/{id}` | HU-03, HU-09 |

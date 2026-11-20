@@ -70,23 +70,21 @@ artifact("vistas del operador<br>(HTML Thymeleaf + JS)", 1020, TOP + 135, 240, 7
 
 # ---------------- servidor de aplicación ----------------
 SX, SY, SW, SH = 400, 360, 560, 240
-node("device", ":Servidor web/API (Linux · nube)", SX, SY, SW, SH)
-node("executionEnvironment", ":JVM 21 · Spring Boot (Tomcat embebido)", SX + 20, SY + 60, SW - 50, 160, env=True)
-artifact("ecogestion.jar<br>(controladores y servicios)", SX + 40, SY + 120, 230, 70)
-artifact("templates/ + static/<br>(Thymeleaf, JS, CSS)", SX + 290, SY + 120, 210, 70)
+node("device", ":Servidor web/API (Railway)", SX, SY, SW, SH)
+node("executionEnvironment", ":JVM 21 · Spring Boot 4 (Tomcat embebido)", SX + 20, SY + 60, SW - 50, 160, env=True)
+artifact("ecogestion.jar<br>(controller, service, repository)", SX + 40, SY + 120, 250, 70)
+artifact("templates/<br>(vistas Thymeleaf)", SX + 310, SY + 120, 190, 70)
 
 # ---------------- fila inferior ----------------
-BY, BH, BW = 730, 200, 305
-xs = [20, 365, 710, 1055]
-node("device", ":Servidor de base de datos", xs[0], BY, BW, BH)
-node("executionEnvironment", ":MongoDB 7", xs[0] + 15, BY + 55, BW - 40, 135, env=True)
-artifact("ecogestion (colecciones<br>+ índice 2dsphere)", xs[0] + 30, BY + 118, BW - 75, 58)
-node("device", ":Almacenamiento de imágenes<br>(Amazon S3)", xs[1], BY, BW, BH)
-artifact("bucket<br>ecogestion-fotos", xs[1] + 50, BY + 95, BW - 100, 70)
-node("device", ":Servicio de correo electrónico<br>(servidor SMTP)", xs[2], BY, BW, BH)
-artifact("relay SMTP", xs[2] + 50, BY + 95, BW - 100, 70)
-node("device", ":Servicio de mapas/GPS<br>(Google Maps Platform)", xs[3], BY, BW, BH)
-artifact("Maps JavaScript API<br>+ Geocoding API", xs[3] + 50, BY + 95, BW - 100, 70)
+BY, BH, BW = 730, 200, 380
+xs = [40, 490, 940]
+node("device", ":Servidor de base de datos (Railway)", xs[0], BY, BW, BH)
+node("executionEnvironment", ":MongoDB", xs[0] + 15, BY + 55, BW - 40, 135, env=True)
+artifact("ecogestion: colecciones, índices 2dsphere<br>y fotos en GridFS", xs[0] + 30, BY + 112, BW - 75, 64)
+node("device", ":Servicio de correo electrónico<br>(servidor SMTP)", xs[1], BY, BW, BH)
+artifact("relay SMTP", xs[1] + 80, BY + 95, BW - 160, 70)
+node("device", ":Servicio de mapas/GPS<br>(Google Maps Platform)", xs[2], BY, BW, BH)
+artifact("Maps JavaScript API<br>+ Geocoding API", xs[2] + 80, BY + 95, BW - 160, 70)
 
 # ---------------- conexiones ----------------
 top_y = TOP + TH
@@ -100,17 +98,12 @@ label("HTTPS:443<br>(HTML/JSON)", 1100, 300, 150, 40, "left")
 
 # servidor -> fila inferior
 sb = SY + SH
-pairs = [(470, xs[0] + BW / 2, "MongoDB Wire Protocol<br>TCP:27017"),
-         (620, xs[1] + BW / 2, "HTTPS:443<br>(SDK S3)"),
-         (760, xs[2] + BW / 2, "SMTP/TLS:587"),
-         (900, xs[3] + BW / 2, "HTTPS:443<br>(Geocoding)")]
-for sx, tx, t in pairs:
-    line(sx, sb, tx, BY + 12)
-mid = (sb + BY) / 2
-label(pairs[0][2], 110, mid - 25, 190, 44, "right")
-label(pairs[1][2], 395, mid - 5, 140, 44, "right")
-label(pairs[2][2], 850, mid + 5, 140, 30, "left")
-label(pairs[3][2], 1060, 620, 150, 44, "left")
+line(520, sb, xs[0] + BW / 2, BY + 12)
+label("MongoDB Wire Protocol<br>TCP:27017", 150, 640, 190, 44, "right")
+line(680, sb, xs[1] + BW / 2, BY + 12)
+label("SMTP/TLS:587", 700, 655, 130, 30, "left")
+line(840, sb, xs[2] + BW / 2, BY + 12)
+label("HTTPS:443<br>(Geocoding)", 1010, 622, 170, 44, "left")
 
 xml = ('<mxfile host="app.diagrams.net"><diagram id="despliegue" name="Vista de despliegue">'
        '<mxGraphModel dx="1360" dy="950" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" '
