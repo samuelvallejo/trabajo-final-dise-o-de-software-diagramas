@@ -1,6 +1,14 @@
 package com.ecogestion.util;
 
-/** Cálculos geográficos simples. */
+/**
+ * Cálculo de distancias entre coordenadas (fórmula del haversine), usado para mostrar a cuántos metros
+ * está un posible duplicado (HU-06) o un punto de recolección (HU-13).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Fabricación pura:</b> utilidad matemática sin estado que no pertenece a ninguna clase del dominio.</li>
+ * </ul>
+ */
 public final class Geo {
 
     private static final double RADIO_TIERRA_METROS = 6_371_000;

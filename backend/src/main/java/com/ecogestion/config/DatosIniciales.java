@@ -26,9 +26,18 @@ import java.util.EnumSet;
 import java.util.List;
 
 /**
- * Crea el administrador inicial (variables ADMIN_CORREO y ADMIN_CONTRASENA) y, si la base está vacía,
- * carga datos de demostración de Pasto: sectores, rutas, puntos de recolección y contenido educativo.
- * Los límites de los sectores son aproximados y solo sirven para la demostración.
+ * Se ejecuta una vez al arrancar la aplicación ({@link ApplicationRunner}):
+ * <ol>
+ *   <li>crea el administrador inicial con las variables ADMIN_CORREO y ADMIN_CONTRASENA;</li>
+ *   <li>si la base está vacía y DATOS_DEMO=true, carga datos de ejemplo de Pasto: 5 sectores, 3 rutas,
+ *       3 puntos de recolección y 2 contenidos educativos.</li>
+ * </ol>
+ * Los límites de los sectores son rectángulos aproximados y solo sirven para la demostración.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Fabricación pura:</b> clase técnica de arranque; no forma parte del dominio.</li>
+ * </ul>
  */
 @Component
 public class DatosIniciales implements ApplicationRunner {

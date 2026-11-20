@@ -10,7 +10,21 @@ import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** DTO del módulo Gestión de reportes, Clasificación y Asignación (HU-03 a HU-10). */
+/**
+ * Objetos de transferencia (DTO) de reportes: crear, clasificar, asignar y marcar duplicados (HU-03 a HU-10).
+ *
+ * <p><b>Cómo funciona:</b> cada {@code record} es un objeto inmutable con los datos que entran
+ * ({@code ...Request}, validados con anotaciones como {@code @NotBlank}) o que salen ({@code ...Response})
+ * de la API en formato JSON. Los métodos {@code de(...)} convierten un objeto del modelo en su respuesta.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Bajo acoplamiento:</b> la API no expone las clases del modelo; si cambia un documento de
+ *       MongoDB, el JSON que usa el frontend no cambia. Tampoco se envían datos sensibles
+ *       (por ejemplo el hash de la contraseña).</li>
+ *   <li><b>Creador:</b> cada respuesta sabe construirse a partir de su objeto del modelo ({@code de}).</li>
+ * </ul>
+ */
 public final class ReporteDto {
 
     private ReporteDto() {

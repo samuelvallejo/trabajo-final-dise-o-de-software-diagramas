@@ -14,7 +14,19 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.Duration;
 import java.util.Map;
 
-/** Catálogo de tipos de residuo (Clasificación y priorización) y descarga de fotos almacenadas. */
+/**
+ * API de apoyo: catálogo de tipos de residuo con su prioridad sugerida (HU-05) y descarga de las fotos
+ * guardadas en GridFS ({@code /api/imagenes/{id}}).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Controlador:</b> es el primer objeto que recibe la operación del sistema que llega desde la
+ *       interfaz (una petición HTTP). Solo traduce la petición, delega en el servicio y devuelve la
+ *       respuesta; no tiene reglas de negocio.</li>
+ *   <li><b>Bajo acoplamiento:</b> recibe y devuelve DTOs (records), así los cambios internos del modelo
+ *       no rompen la API que usa el frontend.</li>
+ * </ul>
+ */
 @RestController
 public class ApoyoController {
 

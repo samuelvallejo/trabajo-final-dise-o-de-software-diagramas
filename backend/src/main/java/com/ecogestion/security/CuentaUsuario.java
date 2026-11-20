@@ -13,7 +13,16 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Usuario autenticado en la sesión: identificador, correo, rol y si la cuenta está bloqueada.
+ * Usuario autenticado tal como lo ve Spring Security durante la sesión: id, correo, hash de la contraseña,
+ * rol y si la cuenta está bloqueada. Se guarda en la sesión HTTP; los controladores lo reciben con
+ * {@code @AuthenticationPrincipal CuentaUsuario cuenta}.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Indirección (adaptador):</b> adapta un {@code Usuario} del dominio a la interfaz {@code UserDetails}
+ *       que exige Spring Security, sin que las clases del modelo dependan de Spring Security.</li>
+ *   <li><b>Bajo acoplamiento:</b> los controladores solo necesitan el id y el rol, no el documento completo.</li>
+ * </ul>
  */
 public class CuentaUsuario implements UserDetails, Serializable {
 

@@ -7,8 +7,11 @@ import java.time.LocalTime;
 import java.util.Objects;
 
 /**
- * Franja de recolección de una ruta (objeto de valor embebido en {@link RutaRecoleccion}).
- * La hora de fin debe ser posterior a la de inicio (HU-12, criterio 4).
+ * Franja de recolección de una ruta: día de la semana y horas de inicio y fin. Es un objeto de valor
+ * (un {@code record} inmutable) que se guarda dentro del documento de {@link RutaRecoleccion}.
+ *
+ * <p><b>Patrón GRASP — Experto en información:</b> el propio horario valida, al construirse, que la hora
+ * de fin sea posterior a la de inicio (HU-12, criterio 4); no puede existir un horario inválido.
  */
 public record HorarioRecoleccion(DayOfWeek diaSemana, LocalTime horaInicio, LocalTime horaFin) {
 

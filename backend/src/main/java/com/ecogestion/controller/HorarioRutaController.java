@@ -22,7 +22,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** Horarios y rutas de recolección por sector (HU-12). */
+/**
+ * API de sectores, horarios y rutas de recolección (HU-12). La consulta es pública; crear y editar
+ * rutas es solo para el administrador ({@code /api/admin/rutas}).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Controlador:</b> es el primer objeto que recibe la operación del sistema que llega desde la
+ *       interfaz (una petición HTTP). Solo traduce la petición, delega en el servicio y devuelve la
+ *       respuesta; no tiene reglas de negocio.</li>
+ *   <li><b>Bajo acoplamiento:</b> recibe y devuelve DTOs (records), así los cambios internos del modelo
+ *       no rompen la API que usa el frontend.</li>
+ * </ul>
+ */
 @RestController
 public class HorarioRutaController {
 

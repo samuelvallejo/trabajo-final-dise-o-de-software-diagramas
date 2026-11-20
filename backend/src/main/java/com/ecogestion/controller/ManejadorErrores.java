@@ -19,7 +19,23 @@ import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.stream.Collectors;
 
-/** Traduce las excepciones a respuestas HTTP con el formato Problem Details (RFC 9457). */
+/**
+ * Convierte las excepciones en respuestas HTTP con el formato estándar Problem Details (RFC 9457):
+ * {@code {"status": 409, "title": "Regla de negocio", "detail": "El reporte ya está asignado a ..."}}.
+ * El frontend muestra el campo {@code detail} al usuario.
+ *
+ * <p><b>Cómo funciona:</b> {@code @RestControllerAdvice} hace que Spring llame a estos métodos cuando
+ * cualquier controlador lanza la excepción indicada en {@code @ExceptionHandler}.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Fabricación pura:</b> no es un concepto del caso de estudio; existe para que ningún
+ *       controlador tenga que repetir try/catch.</li>
+ *   <li><b>Alta cohesión:</b> la traducción "error → código HTTP" está en un solo lugar.</li>
+ *   <li><b>Bajo acoplamiento:</b> el dominio lanza excepciones propias (por ejemplo
+ *       {@link ReglaNegocioException}) sin saber nada de HTTP.</li>
+ * </ul>
+ */
 @RestControllerAdvice
 public class ManejadorErrores {
 

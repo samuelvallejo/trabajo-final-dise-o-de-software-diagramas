@@ -7,7 +7,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 /**
- * Contenido de educación ambiental. Los borradores no son visibles para los ciudadanos (HU-14).
+ * Artículo de educación ambiental (colección {@code contenidos}, HU-14). Mientras no se publique es un
+ * borrador que los ciudadanos no ven.
+ *
+ * <p><b>Patrón GRASP — Experto en información:</b> el contenido conoce su título y su texto, por eso él
+ * mismo responde si contiene una palabra buscada ({@link #contiene}) y controla su publicación.
  */
 @Document("contenidos")
 public class ContenidoEducativo {

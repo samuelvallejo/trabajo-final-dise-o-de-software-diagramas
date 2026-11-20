@@ -32,8 +32,18 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 
 /**
- * {@code «RestController» ReporteController} de la vista de desarrollo: registrar, asignar, listar y
- * obtener reportes, más la clasificación y los duplicados que hace el administrador.
+ * API de reportes ({@code «RestController» ReporteController} de la vista de desarrollo), rutas bajo {@code /api/reportes}:
+ * el ciudadano registra y consulta sus reportes (HU-03, HU-04, HU-10) y el administrador revisa la bandeja,
+ * clasifica, gestiona duplicados y asigna operadores (HU-05, HU-06, HU-07).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Controlador:</b> es el primer objeto que recibe la operación del sistema que llega desde la
+ *       interfaz (una petición HTTP). Solo traduce la petición, delega en el servicio y devuelve la
+ *       respuesta; no tiene reglas de negocio.</li>
+ *   <li><b>Bajo acoplamiento:</b> recibe y devuelve DTOs (records), así los cambios internos del modelo
+ *       no rompen la API que usa el frontend.</li>
+ * </ul>
  */
 @RestController
 @RequestMapping("/api/reportes")

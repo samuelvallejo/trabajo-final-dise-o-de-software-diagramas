@@ -7,8 +7,15 @@ import org.springframework.security.authentication.event.AuthenticationSuccessEv
 import org.springframework.stereotype.Component;
 
 /**
- * Cuenta los intentos fallidos de inicio de sesión para bloquear la cuenta 15 minutos tras 5 fallos
- * seguidos, y los reinicia al entrar correctamente (HU-01, criterio 5).
+ * Escucha los eventos de inicio de sesión de Spring Security: cuenta los intentos fallidos (al quinto la
+ * cuenta se bloquea 15 minutos) y los reinicia cuando el ingreso es correcto (HU-01, criterio 5).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Indirección:</b> separa el aviso de Spring Security de la decisión, que toma {@code UsuarioService}
+ *       y, al final, el propio {@code Usuario}.</li>
+ *   <li><b>Bajo acoplamiento:</b> {@code AuthController} no tiene que acordarse de contar intentos; ocurre siempre.</li>
+ * </ul>
  */
 @Component
 public class EventosAutenticacion {

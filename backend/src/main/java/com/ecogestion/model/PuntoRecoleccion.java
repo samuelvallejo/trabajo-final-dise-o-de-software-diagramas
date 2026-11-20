@@ -11,7 +11,11 @@ import java.util.EnumSet;
 import java.util.Set;
 
 /**
- * Punto de recolección autorizado con su ubicación, materiales que recibe y horario (HU-13).
+ * Punto de recolección autorizado: ubicación, materiales que recibe y horario de atención
+ * (colección {@code puntos_recoleccion}, HU-13). Un punto desactivado deja de mostrarse a los ciudadanos.
+ *
+ * <p><b>Patrón GRASP — Experto en información:</b> el punto conoce sus materiales, así que es él quien
+ * responde si recibe un material ({@link #recibeMaterial}) y quien valida sus propios datos.
  */
 @Document("puntos_recoleccion")
 public class PuntoRecoleccion {

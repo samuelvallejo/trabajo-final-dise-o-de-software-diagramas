@@ -20,7 +20,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** Contenido de educación ambiental (HU-14). */
+/**
+ * API de contenido de educación ambiental (HU-14). Los ciudadanos leen lo publicado
+ * ({@code /api/contenidos}); el administrador lo gestiona ({@code /api/admin/contenidos}).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Controlador:</b> es el primer objeto que recibe la operación del sistema que llega desde la
+ *       interfaz (una petición HTTP). Solo traduce la petición, delega en el servicio y devuelve la
+ *       respuesta; no tiene reglas de negocio.</li>
+ *   <li><b>Bajo acoplamiento:</b> recibe y devuelve DTOs (records), así los cambios internos del modelo
+ *       no rompen la API que usa el frontend.</li>
+ * </ul>
+ */
 @RestController
 public class ContenidoEducativoController {
 

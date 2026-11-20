@@ -6,8 +6,15 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Almacenamiento de las fotos de los reportes y de las evidencias (HU-03, HU-09).
- * Devuelve la URL con la que se consulta cada imagen; en el reporte solo se guardan las URL.
+ * Interfaz del almacenamiento de fotos de reportes y de evidencias (HU-03, HU-09). Guarda los archivos y
+ * devuelve la URL con la que se consulta cada uno; el {@code Reporte} solo guarda esas URL.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Variaciones protegidas:</b> hoy las fotos van a MongoDB GridFS; pasar a otro almacenamiento
+ *       (disco, nube) es crear otra implementación de esta interfaz.</li>
+ *   <li><b>Indirección:</b> los servicios no saben cómo ni dónde se guardan los archivos.</li>
+ * </ul>
  */
 public interface AlmacenamientoImagenes {
 

@@ -10,7 +10,13 @@ import org.springframework.stereotype.Component;
 
 /**
  * Canal de correo electrónico (SMTP/TLS:587 en la vista de despliegue). Se activa con
- * {@code NOTIFICACIONES_CANAL=correo} y las variables SMTP_*.
+ * {@code NOTIFICACIONES_CANAL=correo} y las variables SPRING_MAIL_HOST, SPRING_MAIL_USERNAME, etc.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Polimorfismo:</b> implementación de {@link CanalNotificacion}.</li>
+ *   <li><b>Indirección:</b> traduce una {@code Notificacion} del dominio a un correo de Spring Mail.</li>
+ * </ul>
  */
 @Component
 @ConditionalOnProperty(name = "ecogestion.notificaciones.canal", havingValue = "correo")

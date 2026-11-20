@@ -1,8 +1,10 @@
 package com.ecogestion.model;
 
 /**
- * Tipos de residuo del reporte (HU-03) y su prioridad sugerida (HU-05:
- * los residuos peligrosos tienen más prioridad que los domésticos).
+ * Tipos de residuo que el ciudadano elige al reportar (HU-03), cada uno con su prioridad sugerida (HU-05).
+ *
+ * <p><b>Patrón GRASP — Experto en información:</b> cada tipo conoce su prioridad sugerida y si es
+ * peligroso; nadie más necesita una tabla aparte con esa información.
  */
 public enum TipoResiduo {
     DOMESTICO(Prioridad.BAJA),

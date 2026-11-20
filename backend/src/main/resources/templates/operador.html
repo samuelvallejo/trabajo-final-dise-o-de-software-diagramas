@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<!--
+  Página del operador de limpieza (requiere sesión con rol OPERADOR).
+  - Mis reportes asignados con su ubicación, ordenados por prioridad o por fecha. HU-08
+  - Iniciar la atención y registrar el cierre con descripción y fotos de evidencia. HU-09
+  La lógica está en /js/operador.js.
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos :: cabeza('Operador')}"></head>
+<body>
+<header th:replace="~{fragmentos :: barra('Operador de limpieza')}"></header>
+
+<main>
+    <section>
+        <h2>Mis reportes asignados</h2>
+        <div class="fila">
+            <div>
+                <label for="orden">Ordenar por</label>
+                <select id="orden" onchange="cargarAsignaciones()">
+                    <option value="prioridad">Prioridad</option>
+                    <option value="fecha">Fecha (más antiguos primero)</option>
+                </select>
+            </div>
+        </div>
+        <div id="msgAsignaciones" class="mensaje"></div>
+        <div id="asignaciones"></div>
+    </section>
+</main>
+
+<script th:src="@{/js/operador.js}"></script>
+</body>
+</html>

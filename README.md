@@ -32,7 +32,7 @@ una marca de agua. Con una licencia activada, cada diagrama del `.vpp` se puede 
 
 | Capa | Tecnología |
 |---|---|
-| Aplicación (backend y vistas) | **Java 21 + Spring Boot 4**: Spring MVC (API REST), vista **Thymeleaf**, Spring Security, Spring Data MongoDB, Bean Validation. Sin React, Angular ni Node. |
+| Aplicación (backend y vistas) | **Java 21 + Spring Boot 4**: Spring MVC (API REST), frontend HTML con plantillas **Thymeleaf** y JavaScript sin librerías, Spring Security, Spring Data MongoDB, Bean Validation. Sin React, Angular ni Node. |
 | Clientes | Navegador web del PC o del celular (el GPS se toma con la API de geolocalización del navegador) |
 | Base de datos | **MongoDB** (colecciones por agregado e índices `2dsphere` para consultas por cercanía) |
 | Almacenamiento de imágenes | MongoDB **GridFS** (en la misma base de datos) |
@@ -56,10 +56,41 @@ backend/src/main/java/com/ecogestion
 │                RutaRecoleccion, PuntoRecoleccion, ContenidoEducativo, Notificacion y enumeraciones
 ├── integracion  interfaces y estrategias: CanalNotificacion (correo/registro), ServicioMapas (Google/coordenadas),
 │                AlmacenamientoImagenes (GridFS)
-├── security     autenticación con Spring Security (sesión + HTTP Basic, BCrypt, bloqueo tras 5 intentos)
+├── security     autenticación con Spring Security (sesión HTTP, BCrypt, bloqueo tras 5 intentos)
 ├── config       seguridad, propiedades y datos iniciales (sectores, rutas, puntos y contenido de Pasto)
 └── dto          registros de entrada y salida de la API
+
+backend/src/main/resources
+├── templates    páginas HTML (Thymeleaf): index, ciudadano, administrador, operador y fragmentos comunes
+└── static       css/estilos.css y js/ (api.js con las funciones comunes + un archivo por página)
 ```
+
+Cada clase tiene un comentario que explica qué hace, cómo funciona y qué patrón GRASP aplica y por qué.
+Resumen:
+
+| Patrón GRASP | Dónde se aplica | Por qué |
+|---|---|---|
+| Controlador | `controller/*Controller` | Reciben las peticiones HTTP y delegan en los servicios; no tienen reglas de negocio |
+| Experto en información | `Reporte`, `Usuario`, `Operador`, `EstadoReporte`, `TipoResiduo`, `Sector`, `PuntoRecoleccion`... | Cada regla está en la clase que tiene los datos (por ejemplo, `Reporte.asignar` impide la doble asignación) |
+| Creador | `ReporteService` crea `Reporte`, `UsuarioService` crea usuarios, `NotificacionService` crea `Notificacion` | Quien tiene los datos de inicialización crea el objeto |
+| Alta cohesión | Un servicio por componente de la vista funcional | Cada clase tiene un solo tema (reportes, usuarios, notificaciones...) |
+| Bajo acoplamiento | DTOs en la API, servicios que usan servicios de otros componentes y no sus repositorios | Un cambio interno no se propaga al resto |
+| Polimorfismo | `Usuario.getRol()`, `CanalNotificacion`, `ServicioMapas`, `AlmacenamientoImagenes` | Se cambia el comportamiento sin if/else por tipo |
+| Fabricación pura | Servicios, repositorios, `ManejadorErrores`, `ValidadorFotos`, `Geo` | Clases técnicas que no existen en el caso de estudio pero mantienen limpio el dominio |
+| Indirección | Repositorios, `CanalNotificacion`, `CuentaUsuario`, `EventosAutenticacion` | Un intermediario desacopla dos partes (servicio ↔ MongoDB, servicio ↔ SMTP, dominio ↔ Spring Security) |
+| Variaciones protegidas | Interfaces de `integracion` y `EcoGestionProperties` | Cambiar de proveedor de correo, mapas o almacenamiento, o un parámetro, no obliga a tocar la lógica |
+
+### Frontend
+
+| Página | Rol | Qué permite |
+|---|---|---|
+| `/` | Público | Iniciar sesión, registrarse, consultar horarios por sector o barrio, puntos de recolección y educación ambiental |
+| `/ciudadano` | Ciudadano | Crear reportes con GPS o coordenadas y fotos, ver su historial y detalle, notificaciones, horarios y puntos de su sector, perfil y contraseña |
+| `/administrador` | Administrador | Panel, bandeja con filtros, clasificar, revisar duplicados, asignar operadores, crear operadores, informe y CSV, contenido educativo y puntos |
+| `/operador` | Operador | Ver sus reportes asignados, iniciar la atención y cerrarlos con fotos de evidencia |
+
+Las páginas solo traen la estructura; los datos se piden a la API con `fetch` y la sesión viaja en la cookie
+`JSESSIONID`. Si alguien abre una página que no corresponde a su rol, se le lleva a la suya.
 
 ### Ejecutar en local
 
@@ -68,6 +99,8 @@ Requiere Java 21 y un MongoDB local (`mongodb://localhost:27017/ecogestion` por 
 ```bash
 cd backend && ./mvnw spring-boot:run
 ```
+
+Luego abrir `http://localhost:8080`. Para entrar como administrador, definir antes `ADMIN_CORREO` y `ADMIN_CONTRASENA`.
 
 Pruebas unitarias (modelo de dominio y servicios):
 
@@ -96,7 +129,7 @@ cd backend && ./mvnw test
 | Administrador | `GET /api/reportes?estado=&tipoResiduo=&prioridad=&sector=`, `PUT /api/reportes/{id}/clasificacion`, `GET /api/reportes/{id}/posibles-duplicados`, `PUT/DELETE /api/reportes/{id}/duplicado`, `PUT /api/reportes/{id}/asignacion`, `/api/admin/operadores`, `/api/admin/rutas`, `/api/admin/puntos`, `/api/admin/contenidos`, `/api/admin/estadisticas/panel`, `/informe`, `/informe.csv` |
 | Operador | `GET /api/operador/asignaciones`, `GET /api/operador/asignaciones/{id}`, `POST /api/operador/asignaciones/{id}/inicio`, `POST /api/operador/asignaciones/{id}/cierre` (multipart `descripcionTrabajo` + `evidencias`) |
 
-La página de inicio (`/`) resume estas rutas por rol e historia de usuario.
+Los errores se devuelven en formato *Problem Details* (`status`, `title`, `detail`).
 
 ### Despliegue en Railway
 

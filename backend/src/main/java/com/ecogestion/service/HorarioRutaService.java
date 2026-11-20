@@ -21,8 +21,16 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Componente "Horarios y rutas". Provee "Identificar sector" (a Gestión de reportes) y
- * "Consultar sector" (a Puntos de recolección). Historia HU-12.
+ * Lógica del componente "Horarios y rutas" (HU-12): sectores de la ciudad, rutas del carro recolector y
+ * sus horarios. Provee "Identificar sector" a Gestión de reportes y "Consultar sector" a Puntos de recolección.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Experto en información:</b> es el único componente que conoce los sectores, por eso es quien
+ *       responde en qué sector cae una coordenada ({@link #identificarSector}).</li>
+ *   <li><b>Alta cohesión:</b> solo maneja sectores, rutas y horarios.</li>
+ *   <li><b>Creador:</b> crea las {@link RutaRecoleccion} con los datos que envía el administrador.</li>
+ * </ul>
  */
 @Service
 public class HorarioRutaService {
@@ -38,7 +46,10 @@ public class HorarioRutaService {
         this.mongoTemplate = mongoTemplate;
     }
 
-    /** "Identificar sector": sector cuyo límite contiene el punto (HU-04, criterio 3). */
+    /**
+     * "Identificar sector": devuelve el sector cuyo polígono contiene el punto (HU-04, criterio 3).
+     * Usa una consulta geográfica de MongoDB ({@code $geoIntersects}) sobre el índice 2dsphere del límite.
+     */
     public Optional<Sector> identificarSector(double latitud, double longitud) {
         Query consulta = Query.query(Criteria.where("limite").intersects(new GeoJsonPoint(longitud, latitud)));
         return Optional.ofNullable(mongoTemplate.findOne(consulta, Sector.class));

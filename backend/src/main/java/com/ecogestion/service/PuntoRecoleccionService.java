@@ -14,7 +14,16 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Componente "Puntos de recolección". Requiere "Consultar sector" de Horarios y rutas. Historia HU-13.
+ * Lógica del componente "Puntos de recolección" (HU-13): consultar los puntos autorizados con filtros
+ * y, para el administrador, crearlos, editarlos y desactivarlos.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Creador:</b> crea los {@link PuntoRecoleccion} con los datos que envía el administrador.</li>
+ *   <li><b>Bajo acoplamiento:</b> para validar o identificar el sector usa el servicio "Consultar sector"
+ *       de {@link HorarioRutaService} en vez de leer la colección de sectores.</li>
+ *   <li><b>Experto en información:</b> cada punto decide si recibe un material ({@code recibeMaterial}).</li>
+ * </ul>
  */
 @Service
 public class PuntoRecoleccionService {

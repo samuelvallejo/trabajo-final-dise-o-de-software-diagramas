@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<!--
+  Página del ciudadano (requiere sesión con rol CIUDADANO).
+  - Nuevo reporte con descripción, tipo, ubicación (GPS o coordenadas) y fotos. HU-03, HU-04
+  - Mis reportes con su estado e historial. HU-10
+  - Mis notificaciones. HU-11
+  - Horarios y puntos de recolección de mi sector. HU-12, HU-13
+  - Mi perfil y cambio de contraseña. HU-02
+  La lógica está en /js/ciudadano.js.
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos :: cabeza('Ciudadano')}"></head>
+<body>
+<header th:replace="~{fragmentos :: barra('Ciudadano')}"></header>
+
+<main>
+    <section>
+        <h2>Nuevo reporte</h2>
+        <form id="formReporte">
+            <label for="descripcion">¿Qué está pasando?</label>
+            <textarea id="descripcion" required placeholder="Ej.: Bolsas de basura acumuladas en la esquina del parque"></textarea>
+            <div class="fila">
+                <div>
+                    <label for="tipoResiduo">Tipo de residuo</label>
+                    <select id="tipoResiduo" required>
+                        <option th:each="t : ${tipos}" th:value="${t}" th:text="${t}">TIPO</option>
+                    </select>
+                </div>
+                <div><label for="latitud">Latitud</label><input id="latitud" type="number" step="any" required></div>
+                <div><label for="longitud">Longitud</label><input id="longitud" type="number" step="any" required></div>
+            </div>
+            <button type="button" class="secundario" onclick="usarGps()">Usar mi ubicación (GPS)</button>
+            <button type="button" class="secundario" onclick="usarCentro()">Usar el centro de Pasto</button>
+            <label for="fotos">Fotos (de 1 a 5, JPG o PNG, máximo 5 MB cada una)</label>
+            <input id="fotos" type="file" accept="image/jpeg,image/png" multiple required>
+            <button type="submit">Enviar reporte</button>
+        </form>
+        <div id="msgReporte" class="mensaje"></div>
+    </section>
+
+    <section>
+        <h2>Mis reportes</h2>
+        <div class="fila">
+            <div>
+                <label for="filtroEstado">Estado</label>
+                <select id="filtroEstado" onchange="cargarReportes()">
+                    <option value="">Todos</option>
+                    <option th:each="e : ${estados}" th:value="${e}" th:text="${e}">ESTADO</option>
+                </select>
+            </div>
+        </div>
+        <div id="reportes"></div>
+        <div id="detalleReporte"></div>
+    </section>
+
+    <div class="columnas">
+        <section>
+            <h2>Mis notificaciones</h2>
+            <div id="notificaciones"></div>
+        </section>
+        <section>
+            <h2>Horarios de mi sector</h2>
+            <div id="msgHorarios" class="mensaje"></div>
+            <div id="horarios"></div>
+        </section>
+    </div>
+
+    <section>
+        <h2>Puntos de recolección de mi sector</h2>
+        <div id="puntos"></div>
+    </section>
+
+    <div class="columnas">
+        <section>
+            <h2>Mi perfil</h2>
+            <form id="formPerfil">
+                <label for="perfilNombre">Nombre</label>
+                <input id="perfilNombre" required>
+                <label for="perfilCorreo">Correo</label>
+                <input id="perfilCorreo" type="email" required>
+                <label for="perfilSector">Sector</label>
+                <select id="perfilSector"></select>
+                <button type="submit">Guardar cambios</button>
+            </form>
+            <div id="msgPerfil" class="mensaje"></div>
+        </section>
+        <section>
+            <h2>Cambiar contraseña</h2>
+            <form id="formContrasena">
+                <label for="contrasenaActual">Contraseña actual</label>
+                <input id="contrasenaActual" type="password" required>
+                <label for="contrasenaNueva">Contraseña nueva</label>
+                <input id="contrasenaNueva" type="password" required>
+                <button type="submit">Cambiar contraseña</button>
+            </form>
+            <div id="msgContrasena" class="mensaje"></div>
+        </section>
+    </div>
+</main>
+
+<script th:src="@{/js/ciudadano.js}"></script>
+</body>
+</html>

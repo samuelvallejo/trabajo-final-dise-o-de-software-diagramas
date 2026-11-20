@@ -7,8 +7,11 @@ import org.springframework.data.mongodb.core.mapping.Document;
 import java.time.LocalDateTime;
 
 /**
- * Notificación de cambio de estado de un reporte. Queda en el historial del usuario y registra si se
- * envió y cuántos intentos se hicieron (HU-11).
+ * Aviso que recibe un ciudadano cuando su reporte cambia de estado (colección {@code notificaciones}, HU-11).
+ * Queda en su historial aunque el envío falle, y registra cuántos intentos se hicieron y por qué canal salió.
+ *
+ * <p><b>Patrón GRASP — Experto en información:</b> la notificación lleva la cuenta de sus propios
+ * intentos y sabe marcarse como enviada.
  */
 @Document("notificaciones")
 public class Notificacion {

@@ -11,8 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Sector de la ciudad que agrupa varios barrios (HU-12). Su límite permite identificar el sector
- * de un reporte a partir de su ubicación ("Identificar sector" en la vista funcional).
+ * Sector de la ciudad que agrupa varios barrios (colección {@code sectores}, HU-12).
+ * Su límite es un polígono GeoJSON con índice 2dsphere: MongoDB puede responder "¿en qué sector cae
+ * esta coordenada?", que es el servicio "Identificar sector" de la vista funcional (HU-04).
+ *
+ * <p><b>Patrón GRASP — Experto en información:</b> el sector conoce sus barrios, por eso es él quien
+ * responde si incluye un barrio ({@link #incluyeBarrio}).
  */
 @Document("sectores")
 public class Sector {

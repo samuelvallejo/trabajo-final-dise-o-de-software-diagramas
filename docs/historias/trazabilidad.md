@@ -91,3 +91,4 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
 | Estadísticas e informes | `EstadisticaService` | `EstadisticaController` (`/api/admin/estadisticas/panel`, `/informe`, `/informe.csv`) | HU-15 |
 | Servicio de mapas/GPS (externo) | `ServicioMapas` (`GoogleGeocodingServicioMapas`, `CoordenadasServicioMapas`) | — | HU-04 |
 | Almacenamiento de imágenes | `AlmacenamientoImagenes` (`GridFsAlmacenamientoImagenes`) | `GET /api/imagenes/{id}` | HU-03, HU-09 |
+| Interfaz web (vistas Thymeleaf + JS) | — | `PaginasController` (`/`, `/ciudadano`, `/administrador`, `/operador`) con `static/js/*.js` | HU-01 a HU-15 |

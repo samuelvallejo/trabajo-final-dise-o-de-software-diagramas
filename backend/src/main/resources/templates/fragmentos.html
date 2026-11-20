@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<!--
+  Fragmentos reutilizables (Thymeleaf). Cada página los incluye con th:replace para no repetir
+  el <head> ni la barra superior:
+    - cabeza(titulo): metadatos, hoja de estilos y el módulo común api.js
+    - barra(rol): barra superior con el nombre del usuario y el botón "Cerrar sesión"
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head th:fragment="cabeza(titulo)">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titulo} + ' · EcoGestión'">EcoGestión</title>
+    <link rel="stylesheet" th:href="@{/css/estilos.css}">
+    <script th:src="@{/js/api.js}"></script>
+</head>
+
+<body>
+<header th:fragment="barra(rol)" class="barra">
+    <div class="marca">
+        <strong>EcoGestión</strong>
+        <span th:text="${rol}">Rol</span>
+    </div>
+    <div class="usuario">
+        <span id="nombreUsuario"></span>
+        <button type="button" class="secundario" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+</header>
+</body>
+</html>

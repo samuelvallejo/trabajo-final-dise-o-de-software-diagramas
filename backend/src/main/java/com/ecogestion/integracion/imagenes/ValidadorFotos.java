@@ -9,7 +9,13 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * Reglas de las fotos (HU-03, criterio 3; HU-09): de 1 a 5 archivos JPG o PNG de máximo 5 MB.
+ * Reglas de las fotos (HU-03, criterio 3; HU-09): de 1 a 5 archivos JPG o PNG de máximo 5 MB cada uno.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Alta cohesión y Fabricación pura:</b> las reglas de archivos están en una sola clase y se reutilizan
+ *       para las fotos del reporte y para las evidencias del operador.</li>
+ * </ul>
  */
 @Component
 public class ValidadorFotos {

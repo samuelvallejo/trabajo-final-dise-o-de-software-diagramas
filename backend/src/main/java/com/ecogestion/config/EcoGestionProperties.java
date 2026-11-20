@@ -3,7 +3,15 @@ package com.ecogestion.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
- * Parámetros de negocio configurables (prefijo {@code ecogestion}).
+ * Parámetros de negocio que se cambian sin tocar el código (prefijo {@code ecogestion} en
+ * application.properties o variables de entorno): radio de duplicados, intentos de inicio de sesión,
+ * límites del municipio, canal de notificación, etc.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Variaciones protegidas:</b> los valores que pueden cambiar están fuera del código.</li>
+ *   <li><b>Experto en información:</b> {@link Municipio} sabe si una coordenada está dentro de Pasto ({@code contiene}).</li>
+ * </ul>
  */
 @ConfigurationProperties(prefix = "ecogestion")
 public record EcoGestionProperties(

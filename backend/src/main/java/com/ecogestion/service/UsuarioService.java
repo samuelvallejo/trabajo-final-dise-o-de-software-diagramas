@@ -24,8 +24,19 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Componente "Gestión de usuarios" (vista funcional). Provee: Validar ciudadano, Consultar operadores,
- * Obtener correo del ciudadano y Validar rol de administrador. Historias HU-01, HU-02 y parte de HU-07.
+ * Lógica del componente "Gestión de usuarios": registro e inicio de sesión (HU-01), perfil (HU-02) y
+ * cuentas de operadores. También provee a otros componentes los servicios de la vista funcional
+ * "Validar ciudadano", "Obtener correo del ciudadano" y "Validar rol de administrador".
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Creador:</b> crea {@link Ciudadano}, {@link Operador} y {@link Administrador} porque recibe los
+ *       datos de registro y es responsable de cifrar la contraseña antes de crearlos.</li>
+ *   <li><b>Alta cohesión:</b> todo lo relacionado con cuentas está aquí y en ningún otro servicio.</li>
+ *   <li><b>Polimorfismo:</b> trabaja con {@link Usuario} sin importar el tipo concreto; solo
+ *       {@link #guardar} necesita saber en qué colección va cada tipo.</li>
+ *   <li><b>Bajo acoplamiento:</b> usa la interfaz {@link PasswordEncoder}; no sabe que por debajo es BCrypt.</li>
+ * </ul>
  */
 @Service
 public class UsuarioService {
@@ -48,13 +59,12 @@ public class UsuarioService {
         this.seguridad = propiedades.seguridad();
     }
 
-    // ------------------------------------------------------------------ HU-01 registro
+    // ============================================================ HU-01: registro e inicio de sesión
 
+    /** Crea la cuenta de un ciudadano. El correo y el documento no pueden repetirse. */
     public Ciudadano registrarCiudadano(RegistroRequest datos) {
         String correo = normalizar(datos.correo());
-        if (correoEnUso(correo)) {
-            throw new ReglaNegocioException("El correo ya está registrado");
-        }
+        validarCorreoLibre(correo);
         if (ciudadanoRepository.existsByDocumento(datos.documento())) {
             throw new ReglaNegocioException("El documento ya está registrado");
         }
@@ -64,6 +74,7 @@ public class UsuarioService {
         return ciudadanoRepository.save(ciudadano);
     }
 
+    /** Busca una cuenta por correo en las tres colecciones (el correo es único en todo el sistema). */
     public Optional<Usuario> buscarPorCorreo(String correo) {
         String c = normalizar(correo);
         return ciudadanoRepository.findByCorreo(c).<Usuario>map(u -> u)
@@ -71,7 +82,7 @@ public class UsuarioService {
                 .or(() -> administradorRepository.findByCorreo(c).map(u -> u));
     }
 
-    /** Cuenta un intento fallido y bloquea 15 minutos al llegar a 5 (HU-01, criterio 5). */
+    /** Cuenta un intento fallido; al quinto la cuenta queda bloqueada 15 minutos (HU-01, criterio 5). */
     public void registrarIntentoFallido(String correo) {
         buscarPorCorreo(correo).ifPresent(usuario -> {
             usuario.registrarIntentoFallido(LocalDateTime.now(), seguridad.intentosMaximos(), seguridad.minutosBloqueo());
@@ -79,16 +90,19 @@ public class UsuarioService {
         });
     }
 
+    /** Al entrar correctamente se borran los intentos fallidos acumulados. */
     public void registrarIngresoExitoso(String correo) {
-        buscarPorCorreo(correo).filter(u -> u.getIntentosFallidos() > 0 || u.getBloqueadoHasta() != null)
+        buscarPorCorreo(correo)
+                .filter(u -> u.getIntentosFallidos() > 0 || u.getBloqueadoHasta() != null)
                 .ifPresent(usuario -> {
                     usuario.reiniciarIntentos();
                     guardar(usuario);
                 });
     }
 
-    // ------------------------------------------------------------------ HU-02 perfil
+    // ============================================================ HU-02: perfil del ciudadano
 
+    /** Servicio "Validar ciudadano": devuelve el ciudadano o falla si no existe. */
     public Ciudadano validarCiudadano(String ciudadanoId) {
         return ciudadanoRepository.findById(ciudadanoId)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Ciudadano", ciudadanoId));
@@ -97,8 +111,8 @@ public class UsuarioService {
     public Ciudadano actualizarPerfil(String ciudadanoId, PerfilRequest datos) {
         Ciudadano ciudadano = validarCiudadano(ciudadanoId);
         String correo = normalizar(datos.correo());
-        if (!correo.equals(ciudadano.getCorreo()) && correoEnUso(correo)) {
-            throw new ReglaNegocioException("El correo ya está en uso por otra cuenta");
+        if (!correo.equals(ciudadano.getCorreo())) {
+            validarCorreoLibre(correo);
         }
         ciudadano.setNombre(datos.nombre().trim());
         ciudadano.setCorreo(correo);
@@ -106,6 +120,7 @@ public class UsuarioService {
         return ciudadanoRepository.save(ciudadano);
     }
 
+    /** Cambia la contraseña solo si la actual es correcta. */
     public void cambiarContrasena(String correoUsuario, String actual, String nueva) {
         Usuario usuario = buscarPorCorreo(correoUsuario)
                 .orElseThrow(() -> new RecursoNoEncontradoException("Usuario", correoUsuario));
@@ -116,18 +131,16 @@ public class UsuarioService {
         guardar(usuario);
     }
 
-    /** "Obtener correo del ciudadano" (lo consume Notificaciones, HU-11). */
+    /** Servicio "Obtener correo del ciudadano" que usa Notificaciones (HU-11). */
     public String obtenerCorreoDelCiudadano(String ciudadanoId) {
         return validarCiudadano(ciudadanoId).getCorreo();
     }
 
-    // ------------------------------------------------------------------ operadores (HU-01 nota, HU-07)
+    // ============================================================ operadores (los crea el administrador)
 
     public Operador crearOperador(OperadorRequest datos) {
         String correo = normalizar(datos.correo());
-        if (correoEnUso(correo)) {
-            throw new ReglaNegocioException("El correo ya está registrado");
-        }
+        validarCorreoLibre(correo);
         if (operadorRepository.existsByDocumento(datos.documento())) {
             throw new ReglaNegocioException("El documento ya está registrado");
         }
@@ -135,18 +148,15 @@ public class UsuarioService {
                 passwordEncoder.encode(datos.contrasena())));
     }
 
-    /** "Consultar operadores" (lo consume Asignación y atención). */
+    /** Servicio "Consultar operadores" que usa Asignación y atención (HU-07). */
     public List<Operador> consultarOperadores(boolean soloDisponibles) {
         return soloDisponibles ? operadorRepository.findByDisponibleTrueOrderByNombreAsc() : operadorRepository.findAll();
     }
 
-    public Operador buscarOperador(String operadorId) {
-        return operadorRepository.findById(operadorId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Operador", operadorId));
-    }
-
+    /** Marca al operador como disponible u ocupado; el propio operador cambia su estado. */
     public Operador cambiarDisponibilidad(String operadorId, boolean disponible) {
-        Operador operador = buscarOperador(operadorId);
+        Operador operador = operadorRepository.findById(operadorId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Operador", operadorId));
         if (disponible) {
             operador.marcarDisponible();
         } else {
@@ -155,16 +165,16 @@ public class UsuarioService {
         return operadorRepository.save(operador);
     }
 
-    // ------------------------------------------------------------------ administración
+    // ============================================================ administración
 
-    /** "Validar rol de administrador" (lo consume Contenido educativo, HU-14). */
+    /** Servicio "Validar rol de administrador" que usa Contenido educativo (HU-14). */
     public void validarRolAdministrador(Rol rol) {
         if (rol != Rol.ADMINISTRADOR) {
             throw new AccessDeniedException("Solo un administrador puede realizar esta acción");
         }
     }
 
-    /** Crea el administrador inicial si aún no existe (variables ADMIN_CORREO y ADMIN_CONTRASENA). */
+    /** Crea el primer administrador al arrancar (variables ADMIN_CORREO y ADMIN_CONTRASENA). */
     public boolean crearAdministradorInicial(String correo, String contrasena) {
         String c = normalizar(correo);
         if (administradorRepository.existsByCorreo(c)) {
@@ -175,13 +185,17 @@ public class UsuarioService {
         return true;
     }
 
-    // ------------------------------------------------------------------ apoyo
+    // ============================================================ métodos privados de apoyo
 
-    private boolean correoEnUso(String correo) {
-        return ciudadanoRepository.existsByCorreo(correo) || operadorRepository.existsByCorreo(correo)
+    private void validarCorreoLibre(String correo) {
+        boolean enUso = ciudadanoRepository.existsByCorreo(correo) || operadorRepository.existsByCorreo(correo)
                 || administradorRepository.existsByCorreo(correo);
+        if (enUso) {
+            throw new ReglaNegocioException("El correo ya está registrado");
+        }
     }
 
+    /** El sector es opcional; si viene, debe existir (se guarda con el nombre oficial). */
     private String validarSector(String sector) {
         if (sector == null || sector.isBlank()) {
             return null;
@@ -189,13 +203,14 @@ public class UsuarioService {
         return horarioRutaService.consultarSector(sector).getNombre();
     }
 
-    private Usuario guardar(Usuario usuario) {
-        return switch (usuario) {
+    /** Cada tipo de usuario vive en su propia colección, así que se guarda con su repositorio. */
+    private void guardar(Usuario usuario) {
+        switch (usuario) {
             case Ciudadano c -> ciudadanoRepository.save(c);
             case Operador o -> operadorRepository.save(o);
             case Administrador a -> administradorRepository.save(a);
             default -> throw new IllegalStateException("Tipo de usuario no soportado");
-        };
+        }
     }
 
     private static String normalizar(String correo) {

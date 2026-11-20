@@ -13,8 +13,16 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Componente "Contenido educativo". Requiere "Validar rol de administrador" de Gestión de usuarios.
- * Historia HU-14.
+ * Lógica del componente "Contenido educativo" (HU-14): los ciudadanos leen lo publicado y el
+ * administrador crea, edita, publica o retira contenidos.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Creador:</b> crea los {@link ContenidoEducativo} con los datos del administrador.</li>
+ *   <li><b>Bajo acoplamiento:</b> no decide quién es administrador; usa el servicio "Validar rol de
+ *       administrador" de {@link UsuarioService}, como muestra la vista funcional.</li>
+ *   <li><b>Experto en información:</b> la búsqueda por palabra y la publicación las hace el propio contenido.</li>
+ * </ul>
  */
 @Service
 public class ContenidoEducativoService {

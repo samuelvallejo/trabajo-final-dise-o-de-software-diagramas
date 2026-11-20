@@ -17,12 +17,28 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Reporte de acumulación de basura o residuos abandonados ({@code «Document» Reporte} de las vistas
- * lógica y de desarrollo). Contiene las reglas de negocio del ciclo de vida del reporte.
+ * Reporte de basura acumulada o residuos abandonados que crea un ciudadano.
+ * Es la clase central del sistema ({@code «Document» Reporte} en las vistas lógica y de desarrollo)
+ * y se guarda en la colección {@code reportes} de MongoDB.
+ *
+ * <p><b>Cómo funciona:</b> el reporte nace en estado PENDIENTE y solo puede avanzar en orden:
+ * PENDIENTE → ASIGNADO → EN_PROCESO → RESUELTO. Cada método público de negocio (asignar,
+ * iniciarAtencion, registrarCierre, marcarComoDuplicado...) valida sus reglas y lanza una excepción
+ * si la operación no está permitida, así el reporte nunca queda en un estado inválido.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Experto en información:</b> el reporte conoce su estado, su operador, sus fotos y su
+ *       reporte original, por eso es él quien decide si se puede asignar, cerrar o marcar como
+ *       duplicado. Los servicios no repiten estas reglas: solo le piden al reporte que actúe.</li>
+ *   <li><b>Alta cohesión:</b> todo lo que cambia el ciclo de vida del reporte está en esta clase;
+ *       guardar en la base de datos o enviar correos queda fuera (servicios y repositorios).</li>
+ * </ul>
  */
 @Document("reportes")
 public class Reporte {
 
+    /** Máximo de fotos por reporte y de fotos de evidencia (HU-03 y HU-09). */
     public static final int MAX_FOTOS = 5;
 
     @Id
@@ -34,7 +50,7 @@ public class Reporte {
     private double longitud;
     private String direccion;
     private String sector;
-    /** Punto GeoJSON con índice 2dsphere para buscar duplicados cercanos (HU-06). */
+    /** La misma ubicación en formato GeoJSON; el índice 2dsphere permite buscar reportes cercanos (HU-06). */
     @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
     private GeoJsonPoint ubicacion;
     private List<String> fotos = new ArrayList<>();
@@ -43,19 +59,27 @@ public class Reporte {
     private EstadoReporte estado = EstadoReporte.PENDIENTE;
     private String descripcionTrabajo;
     private List<String> fotosEvidencia = new ArrayList<>();
+    /** @DBRef guarda solo la referencia al documento del ciudadano (asociación "historial"). */
     @DBRef
     private Ciudadano ciudadano;
+    /** Operador que atiende el reporte (0..1): nunca hay dos operadores para el mismo reporte (HU-07). */
     @DBRef
     private Operador operador;
+    /** Si no es null, este reporte es un duplicado de otro (asociación "duplicadoDe", HU-06). */
     @DBRef
     private Reporte reporteOriginal;
-    /** Control de concurrencia optimista: impide que dos asignaciones simultáneas se guarden (HU-07). */
+    /**
+     * Control de concurrencia optimista: MongoDB rechaza el guardado si otro usuario modificó el
+     * reporte al mismo tiempo. Así dos administradores no pueden asignarlo a la vez (HU-07).
+     */
     @Version
     private Long version;
 
+    /** Constructor vacío que necesita Spring Data para leer el documento desde MongoDB. */
     protected Reporte() {
     }
 
+    /** Crea un reporte nuevo en estado PENDIENTE. La descripción es obligatoria (HU-03). */
     public Reporte(LocalDateTime fechaReporte, Ciudadano ciudadano, String descripcion) {
         if (descripcion == null || descripcion.isBlank()) {
             throw new DatosInvalidosException("La descripción es obligatoria");
@@ -65,33 +89,31 @@ public class Reporte {
         this.descripcion = descripcion.trim();
     }
 
-    // ------------------------------------------------------------------ ubicación y fotos (HU-03, HU-04)
+    // ===================================================== Ubicación y fotos (HU-03, HU-04)
 
+    /** Guarda la ubicación del GPS o del mapa junto con la dirección y el sector calculados. */
     public void registrarUbicacion(double latitud, double longitud, String direccion, String sector) {
         this.latitud = latitud;
         this.longitud = longitud;
         this.direccion = direccion;
         this.sector = sector;
-        this.ubicacion = new GeoJsonPoint(longitud, latitud);
+        this.ubicacion = new GeoJsonPoint(longitud, latitud); // GeoJSON usa el orden (longitud, latitud)
     }
 
+    /** Adjunta las URL de las fotos ya guardadas: entre 1 y 5. */
     public void adjuntarFotos(List<String> urls) {
-        if (urls == null || urls.isEmpty()) {
-            throw new DatosInvalidosException("Debe adjuntar al menos 1 foto");
-        }
-        if (urls.size() > MAX_FOTOS) {
-            throw new DatosInvalidosException("Puede adjuntar como máximo " + MAX_FOTOS + " fotos");
-        }
+        validarCantidadDeFotos(urls, "Debe adjuntar de 1 a " + MAX_FOTOS + " fotos");
         this.fotos = new ArrayList<>(urls);
     }
 
-    // ------------------------------------------------------------------ clasificación (HU-05)
+    // ===================================================== Clasificación (HU-05)
 
+    /** Asigna el tipo de residuo y la prioridad. Un residuo peligroso siempre es de prioridad ALTA. */
     public void clasificar(TipoResiduo tipo, Prioridad nuevaPrioridad) {
         if (tipo == null || nuevaPrioridad == null) {
             throw new DatosInvalidosException("El tipo de residuo y la prioridad son obligatorios");
         }
-        if (!estado.estaAbierto()) {
+        if (estado == EstadoReporte.RESUELTO) {
             throw new ReglaNegocioException("No se puede reclasificar un reporte resuelto");
         }
         if (tipo.esPeligroso() && nuevaPrioridad != Prioridad.ALTA) {
@@ -101,8 +123,9 @@ public class Reporte {
         this.prioridad = nuevaPrioridad;
     }
 
-    // ------------------------------------------------------------------ estados (HU-09)
+    // ===================================================== Estados (HU-09)
 
+    /** Avanza al estado indicado. El enum EstadoReporte decide si el salto está permitido. */
     public void cambiarEstado(EstadoReporte nuevo) {
         if (!estado.puedeAvanzarA(nuevo)) {
             throw new ReglaNegocioException("No se puede pasar de " + estado + " a " + nuevo
@@ -111,13 +134,14 @@ public class Reporte {
         this.estado = nuevo;
     }
 
+    /** Un reporte está pendiente de revisión si no se ha asignado y no es un duplicado. */
     public boolean estaPendiente() {
         return estado == EstadoReporte.PENDIENTE && !esDuplicado();
     }
 
-    // ------------------------------------------------------------------ asignación (HU-07)
+    // ===================================================== Asignación (HU-07)
 
-    /** Asigna el reporte a un operador; un reporte nunca queda con dos operadores. */
+    /** Asigna el reporte a un operador y lo pasa a ASIGNADO. Falla si ya tiene operador. */
     public void asignar(Operador nuevoOperador) {
         Objects.requireNonNull(nuevoOperador);
         if (esDuplicado()) {
@@ -130,7 +154,7 @@ public class Reporte {
         this.operador = nuevoOperador;
     }
 
-    /** Cambia de operador un reporte que todavía no está resuelto. */
+    /** Cambia el operador de un reporte que aún no está resuelto (si no tenía, lo asigna). */
     public void reasignar(Operador nuevoOperador) {
         Objects.requireNonNull(nuevoOperador);
         if (operador == null) {
@@ -143,27 +167,28 @@ public class Reporte {
         this.operador = nuevoOperador;
     }
 
-    // ------------------------------------------------------------------ atención (HU-09)
+    // ===================================================== Atención del operador (HU-09)
 
+    /** El operador empieza a trabajar: ASIGNADO → EN_PROCESO. */
     public void iniciarAtencion() {
         cambiarEstado(EstadoReporte.EN_PROCESO);
     }
 
+    /** El operador termina: guarda lo que hizo y sus fotos de evidencia, y pasa a RESUELTO. */
     public void registrarCierre(String descripcionDelTrabajo, List<String> evidencias) {
         if (descripcionDelTrabajo == null || descripcionDelTrabajo.isBlank()) {
             throw new DatosInvalidosException("La descripción del trabajo realizado es obligatoria");
         }
-        if (evidencias == null || evidencias.isEmpty() || evidencias.size() > MAX_FOTOS) {
-            throw new DatosInvalidosException("Debe adjuntar de 1 a " + MAX_FOTOS + " fotos de evidencia");
-        }
+        validarCantidadDeFotos(evidencias, "Debe adjuntar de 1 a " + MAX_FOTOS + " fotos de evidencia");
         cambiarEstado(EstadoReporte.RESUELTO);
         this.descripcionTrabajo = descripcionDelTrabajo.trim();
         this.fotosEvidencia = new ArrayList<>(evidencias);
         this.fechaResolucion = LocalDateTime.now();
     }
 
-    // ------------------------------------------------------------------ duplicados (HU-06)
+    // ===================================================== Duplicados (HU-06)
 
+    /** Vincula este reporte a otro que describe el mismo problema. */
     public void marcarComoDuplicado(Reporte original) {
         Objects.requireNonNull(original);
         if (original == this || (id != null && id.equals(original.getId()))) {
@@ -178,6 +203,7 @@ public class Reporte {
         this.reporteOriginal = original;
     }
 
+    /** Deshace la vinculación: el reporte vuelve a ser independiente y PENDIENTE. */
     public void desvincularDuplicado() {
         if (!esDuplicado()) {
             throw new ReglaNegocioException("El reporte no está marcado como duplicado");
@@ -190,22 +216,22 @@ public class Reporte {
         return reporteOriginal != null;
     }
 
-    /** Un duplicado refleja el estado de su reporte original (HU-06, criterio 3). */
+    /** Estado que ve el ciudadano: un duplicado muestra el estado de su reporte original (HU-06). */
     public EstadoReporte estadoVisible() {
         return esDuplicado() ? reporteOriginal.getEstado() : estado;
     }
 
-    // ------------------------------------------------------------------ consultas
+    // ===================================================== Consultas de apoyo
 
     public boolean esDelCiudadano(String ciudadanoId) {
-        return ciudadano != null && ciudadano.getId() != null && ciudadano.getId().equals(ciudadanoId);
+        return ciudadano != null && Objects.equals(ciudadano.getId(), ciudadanoId);
     }
 
     public boolean estaAsignadoA(String operadorId) {
-        return operador != null && operador.getId() != null && operador.getId().equals(operadorId);
+        return operador != null && Objects.equals(operador.getId(), operadorId);
     }
 
-    /** Horas entre la creación y la resolución (HU-15: tiempo de atención). */
+    /** Horas que pasaron entre la creación y la resolución (indicador de HU-15). */
     public Double horasDeAtencion() {
         if (fechaResolucion == null) {
             return null;
@@ -213,16 +239,21 @@ public class Reporte {
         return Duration.between(fechaReporte, fechaResolucion).toMinutes() / 60.0;
     }
 
-    // ------------------------------------------------------------------ getters / setters
+    private static void validarCantidadDeFotos(List<String> urls, String mensaje) {
+        if (urls == null || urls.isEmpty() || urls.size() > MAX_FOTOS) {
+            throw new DatosInvalidosException(mensaje);
+        }
+    }
+
+    // ===================================================== Getters y setters
+    // Solo existen los setters que usan las pruebas o la persistencia; los cambios de negocio
+    // se hacen con los métodos de arriba para que siempre se validen las reglas.
 
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
     public String getDescripcion() { return descripcion; }
-    public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
     public TipoResiduo getTipoResiduo() { return tipoResiduo; }
-    public void setTipoResiduo(TipoResiduo tipoResiduo) { this.tipoResiduo = tipoResiduo; }
     public Prioridad getPrioridad() { return prioridad; }
-    public void setPrioridad(Prioridad prioridad) { this.prioridad = prioridad; }
     public double getLatitud() { return latitud; }
     public double getLongitud() { return longitud; }
     public String getDireccion() { return direccion; }
@@ -234,13 +265,10 @@ public class Reporte {
     public LocalDateTime getFechaResolucion() { return fechaResolucion; }
     public void setFechaResolucion(LocalDateTime fechaResolucion) { this.fechaResolucion = fechaResolucion; }
     public EstadoReporte getEstado() { return estado; }
-    public void setEstado(EstadoReporte estado) { this.estado = estado; }
     public String getDescripcionTrabajo() { return descripcionTrabajo; }
     public List<String> getFotosEvidencia() { return fotosEvidencia; }
     public Ciudadano getCiudadano() { return ciudadano; }
-    public void setCiudadano(Ciudadano ciudadano) { this.ciudadano = ciudadano; }
     public Operador getOperador() { return operador; }
-    public void setOperador(Operador operador) { this.operador = operador; }
     public Reporte getReporteOriginal() { return reporteOriginal; }
     public Long getVersion() { return version; }
 }

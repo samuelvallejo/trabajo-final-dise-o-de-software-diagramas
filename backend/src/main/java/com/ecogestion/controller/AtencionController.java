@@ -16,7 +16,19 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
-/** El operador de limpieza consulta y atiende sus reportes asignados (HU-08, HU-09). */
+/**
+ * API del operador de limpieza, rutas bajo {@code /api/operador/asignaciones}: consulta sus reportes
+ * asignados (HU-08), inicia la atención y registra el cierre con fotos de evidencia (HU-09).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Controlador:</b> es el primer objeto que recibe la operación del sistema que llega desde la
+ *       interfaz (una petición HTTP). Solo traduce la petición, delega en el servicio y devuelve la
+ *       respuesta; no tiene reglas de negocio.</li>
+ *   <li><b>Bajo acoplamiento:</b> recibe y devuelve DTOs (records), así los cambios internos del modelo
+ *       no rompen la API que usa el frontend.</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/operador/asignaciones")
 public class AtencionController {

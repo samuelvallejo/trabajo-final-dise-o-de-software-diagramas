@@ -4,7 +4,6 @@ import com.ecogestion.dto.UsuarioDto.DisponibilidadRequest;
 import com.ecogestion.dto.UsuarioDto.OperadorRequest;
 import com.ecogestion.dto.UsuarioDto.OperadorResponse;
 import com.ecogestion.dto.UsuarioDto.UsuarioResponse;
-import com.ecogestion.model.Operador;
 import com.ecogestion.service.ReporteService;
 import com.ecogestion.service.UsuarioService;
 import jakarta.validation.Valid;
@@ -21,7 +20,13 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
-/** El administrador crea operadores y consulta los disponibles para asignar (HU-01 nota, HU-07). */
+/**
+ * API con la que el administrador gestiona los operadores de limpieza: crearlos, listarlos con su carga de
+ * trabajo y marcarlos como disponibles u ocupados (HU-07). Rutas bajo {@code /api/admin/operadores}.
+ *
+ * <p><b>Patrón GRASP — Controlador:</b> recibe la petición HTTP, la convierte en una llamada a los
+ * servicios y devuelve la respuesta. No contiene reglas de negocio.
+ */
 @RestController
 @RequestMapping("/api/admin/operadores")
 public class OperadorController {
@@ -39,19 +44,19 @@ public class OperadorController {
         return ResponseEntity.status(HttpStatus.CREATED).body(UsuarioResponse.de(usuarioService.crearOperador(datos)));
     }
 
-    /** {@code disponibles=true}: solo los que se pueden asignar, con sus reportes sin resolver. */
+    /**
+     * Operadores con su número de reportes sin resolver, para elegir a quién asignar (HU-07, criterio 4).
+     * {@code disponibles=true} (por defecto) muestra solo los que se pueden asignar.
+     */
     @GetMapping
-    public List<?> listar(@RequestParam(defaultValue = "true") boolean disponibles) {
-        if (disponibles) {
-            return reporteService.operadoresParaAsignar();
-        }
-        return usuarioService.consultarOperadores(false).stream()
-                .map(o -> new OperadorResponse(o.getId(), o.getNombre(), o.getCorreo(), o.isDisponible(), 0)).toList();
+    public List<OperadorResponse> listar(@RequestParam(defaultValue = "true") boolean disponibles) {
+        return usuarioService.consultarOperadores(disponibles).stream()
+                .map(o -> OperadorResponse.de(o, reporteService.contarSinResolver(o)))
+                .toList();
     }
 
     @PutMapping("/{id}/disponibilidad")
     public UsuarioResponse cambiarDisponibilidad(@PathVariable String id, @RequestBody DisponibilidadRequest datos) {
-        Operador operador = usuarioService.cambiarDisponibilidad(id, datos.disponible());
-        return UsuarioResponse.de(operador);
+        return UsuarioResponse.de(usuarioService.cambiarDisponibilidad(id, datos.disponible()));
     }
 }

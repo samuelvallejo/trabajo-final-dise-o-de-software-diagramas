@@ -6,8 +6,17 @@ import org.springframework.data.mongodb.core.index.Indexed;
 import java.time.LocalDateTime;
 
 /**
- * Datos y comportamiento comunes de las cuentas del sistema (ciudadano, operador y administrador):
- * credenciales cifradas con BCrypt y bloqueo temporal tras varios intentos fallidos (HU-01).
+ * Datos y comportamiento comunes a todas las cuentas del sistema: ciudadano, operador y administrador.
+ * Guarda las credenciales (la contraseña nunca se guarda en texto plano, solo su hash BCrypt) y
+ * controla el bloqueo temporal tras varios intentos fallidos de inicio de sesión (HU-01).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Polimorfismo:</b> cada subclase responde {@link #getRol()} a su manera. Spring Security y los
+ *       servicios trabajan con "un Usuario" sin preguntar con if/else de qué tipo es.</li>
+ *   <li><b>Experto en información:</b> el usuario conoce sus intentos fallidos y su fecha de bloqueo,
+ *       por eso él mismo decide si está bloqueado ({@link #estaBloqueado}).</li>
+ * </ul>
  */
 public abstract class Usuario {
 
@@ -28,11 +37,11 @@ public abstract class Usuario {
     protected Usuario(String nombre, String documento, String correo, String contrasenaHash) {
         this.nombre = nombre;
         this.documento = documento;
-        this.correo = correo == null ? null : correo.trim().toLowerCase();
+        setCorreo(correo);
         this.contrasenaHash = contrasenaHash;
     }
 
-    /** Rol con el que el usuario actúa en el sistema. */
+    /** Rol con el que la cuenta actúa en el sistema. Cada subclase devuelve el suyo. */
     public abstract Rol getRol();
 
     public boolean estaBloqueado(LocalDateTime ahora) {
@@ -48,6 +57,7 @@ public abstract class Usuario {
         }
     }
 
+    /** Se llama cuando el inicio de sesión es correcto. */
     public void reiniciarIntentos() {
         intentosFallidos = 0;
         bloqueadoHasta = null;
@@ -58,8 +68,8 @@ public abstract class Usuario {
     public String getNombre() { return nombre; }
     public void setNombre(String nombre) { this.nombre = nombre; }
     public String getDocumento() { return documento; }
-    public void setDocumento(String documento) { this.documento = documento; }
     public String getCorreo() { return correo; }
+    /** El correo se guarda siempre en minúsculas para que el inicio de sesión no distinga mayúsculas. */
     public void setCorreo(String correo) { this.correo = correo == null ? null : correo.trim().toLowerCase(); }
     public String getContrasenaHash() { return contrasenaHash; }
     public void setContrasenaHash(String contrasenaHash) { this.contrasenaHash = contrasenaHash; }

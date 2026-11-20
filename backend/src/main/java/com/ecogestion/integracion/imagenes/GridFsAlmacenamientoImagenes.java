@@ -17,8 +17,14 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Guarda las fotos en MongoDB con GridFS (bucket {@code fs}), dentro de la misma base de datos
- * del sistema (vista de despliegue).
+ * Guarda las fotos dentro de MongoDB con GridFS, el mecanismo de MongoDB para archivos (los divide en
+ * partes de 255 KB). Así las fotos quedan en la misma base de datos desplegada en Railway.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Polimorfismo:</b> es una implementación de {@link AlmacenamientoImagenes}.</li>
+ *   <li><b>Fabricación pura:</b> clase técnica que aísla el uso de GridFS.</li>
+ * </ul>
  */
 @Component
 public class GridFsAlmacenamientoImagenes implements AlmacenamientoImagenes {

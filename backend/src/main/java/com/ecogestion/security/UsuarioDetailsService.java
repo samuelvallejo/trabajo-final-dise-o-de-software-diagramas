@@ -8,7 +8,16 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 
-/** Carga la cuenta por correo entre ciudadanos, operadores y administradores. */
+/**
+ * Le dice a Spring Security cómo cargar una cuenta a partir del correo con el que se intenta iniciar sesión.
+ * Después Spring compara la contraseña escrita con el hash BCrypt guardado.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Indirección:</b> conecta Spring Security con {@code UsuarioService} sin que el servicio dependa del framework.</li>
+ *   <li><b>Fabricación pura:</b> clase técnica exigida por Spring Security; no es un concepto del caso de estudio.</li>
+ * </ul>
+ */
 @Service
 public class UsuarioDetailsService implements UserDetailsService {
 

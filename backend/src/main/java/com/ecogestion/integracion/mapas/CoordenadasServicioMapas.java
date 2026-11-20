@@ -5,7 +5,12 @@ import java.util.Optional;
 
 /**
  * Implementación sin proveedor externo: usa las coordenadas como dirección aproximada.
- * Se usa cuando no hay clave de Google Maps configurada.
+ * Se usa cuando no hay clave de Google Maps, para que el sistema funcione igual.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Polimorfismo:</b> implementación concreta de {@link ServicioMapas}.</li>
+ * </ul>
  */
 public class CoordenadasServicioMapas implements ServicioMapas {
 

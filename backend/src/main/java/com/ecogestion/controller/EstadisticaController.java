@@ -16,7 +16,19 @@ import org.springframework.web.bind.annotation.RestController;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 
-/** Panel administrativo, estadísticas e informes (HU-15). */
+/**
+ * API del panel administrativo, el informe por periodo y su descarga en CSV (HU-15),
+ * rutas bajo {@code /api/admin/estadisticas}.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Controlador:</b> es el primer objeto que recibe la operación del sistema que llega desde la
+ *       interfaz (una petición HTTP). Solo traduce la petición, delega en el servicio y devuelve la
+ *       respuesta; no tiene reglas de negocio.</li>
+ *   <li><b>Bajo acoplamiento:</b> recibe y devuelve DTOs (records), así los cambios internos del modelo
+ *       no rompen la API que usa el frontend.</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/admin/estadisticas")
 public class EstadisticaController {

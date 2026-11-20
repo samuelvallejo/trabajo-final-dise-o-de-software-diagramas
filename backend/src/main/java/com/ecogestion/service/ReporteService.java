@@ -4,7 +4,6 @@ import com.ecogestion.config.EcoGestionProperties;
 import com.ecogestion.dto.ReporteDto.PosibleDuplicadoResponse;
 import com.ecogestion.dto.ReporteDto.ReporteRequest;
 import com.ecogestion.dto.ReporteDto.ReporteResponse;
-import com.ecogestion.dto.UsuarioDto.OperadorResponse;
 import com.ecogestion.excepcion.DatosInvalidosException;
 import com.ecogestion.excepcion.RecursoNoEncontradoException;
 import com.ecogestion.excepcion.ReglaNegocioException;
@@ -29,14 +28,37 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
- * {@code «Service» ReporteService} de la vista de desarrollo. Implementa el componente "Gestión de
- * reportes" (HU-03, HU-04, HU-06, HU-10) y la asignación a operadores (HU-05, HU-07).
+ * Lógica de aplicación del componente "Gestión de reportes" ({@code «Service» ReporteService} de la vista
+ * de desarrollo): registrar, consultar, clasificar, detectar duplicados y asignar reportes
+ * (HU-03 a HU-07 y HU-10).
+ *
+ * <p><b>Cómo funciona:</b> cada método público es un caso de uso. El patrón es siempre el mismo:
+ * 1) buscar los objetos en los repositorios, 2) pedirle al objeto de dominio que haga el cambio
+ * (por ejemplo {@code reporte.asignar(operador)}), 3) guardar y 4) devolver un DTO de respuesta.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Creador:</b> crea los objetos {@link Reporte} porque tiene los datos para inicializarlos
+ *       (el ciudadano autenticado, la descripción y la ubicación) y es quien los registra.</li>
+ *   <li><b>Fabricación pura:</b> no es un concepto del caso de estudio; existe para coordinar
+ *       repositorios, mapas, almacenamiento de fotos y notificaciones sin cargar esas tareas al
+ *       {@link Reporte}.</li>
+ *   <li><b>Alta cohesión:</b> solo atiende operaciones de reportes; los usuarios, horarios o estadísticas
+ *       tienen su propio servicio.</li>
+ *   <li><b>Bajo acoplamiento / Variaciones protegidas:</b> depende de interfaces
+ *       ({@link ServicioMapas}, {@link AlmacenamientoImagenes}); cambiar Google Maps o GridFS por otro
+ *       proveedor no obliga a modificar esta clase.</li>
+ * </ul>
+ * Las reglas de negocio <b>no</b> están aquí: viven en {@link Reporte} (Experto en información).
  */
 @Service
 public class ReporteService {
+
+    /** Orden de atención: primero prioridad ALTA y, a igual prioridad, el reporte más antiguo. */
+    private static final Comparator<Reporte> POR_PRIORIDAD_Y_FECHA =
+            Comparator.comparing((Reporte r) -> r.getPrioridad().orden()).thenComparing(Reporte::getFechaReporte);
 
     private final CiudadanoRepository ciudadanoRepository;
     private final OperadorRepository operadorRepository;
@@ -48,6 +70,7 @@ public class ReporteService {
     private final AlmacenamientoImagenes almacenamientoImagenes;
     private final EcoGestionProperties propiedades;
 
+    /** Spring inyecta todas las dependencias por el constructor (inyección de dependencias). */
     public ReporteService(CiudadanoRepository ciudadanoRepository, OperadorRepository operadorRepository,
                           ReporteRepository reporteRepository, ClasificacionService clasificacionService,
                           HorarioRutaService horarioRutaService, NotificacionService notificacionService,
@@ -64,63 +87,73 @@ public class ReporteService {
         this.propiedades = propiedades;
     }
 
-    // ------------------------------------------------------------------ HU-03 y HU-04: registrar reporte
+    // ============================================================ HU-03 y HU-04: registrar un reporte
 
+    /**
+     * Crea un reporte nuevo del ciudadano autenticado.
+     * Pasos: validar que la ubicación esté en Pasto → crear el reporte → clasificarlo con la prioridad
+     * sugerida → calcular dirección y sector → guardar las fotos → guardar el reporte.
+     */
     public ReporteResponse registrarReporte(ReporteRequest request, List<MultipartFile> fotos, String ciudadanoId) {
-        Ciudadano ciudadano = ciudadanoRepository.findById(ciudadanoId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Ciudadano", ciudadanoId));
+        Ciudadano ciudadano = buscarCiudadano(ciudadanoId);
         double latitud = request.latitud();
         double longitud = request.longitud();
         if (!propiedades.municipio().contiene(latitud, longitud)) {
             throw new DatosInvalidosException("La ubicación está fuera del municipio de Pasto");
         }
+
         Reporte reporte = new Reporte(LocalDateTime.now(), ciudadano, request.descripcion());
         clasificacionService.clasificarAutomaticamente(reporte, request.tipoResiduo());
+
         String direccion = servicioMapas.obtenerDireccion(latitud, longitud).orElse(null);
         String sector = horarioRutaService.identificarSector(latitud, longitud).map(Sector::getNombre).orElse(null);
         reporte.registrarUbicacion(latitud, longitud, direccion, sector);
+
         reporte.adjuntarFotos(almacenamientoImagenes.guardar(fotos));
         return ReporteResponse.de(reporteRepository.save(reporte));
     }
 
-    // ------------------------------------------------------------------ consultas (HU-05, HU-10)
+    // ============================================================ HU-05 y HU-10: consultar reportes
 
     /**
-     * El ciudadano ve su historial (HU-10); el administrador ve la bandeja de revisión ordenada por
-     * prioridad y fecha, con filtros por estado, tipo, prioridad y sector (HU-05).
+     * Lista reportes según quién pregunta:
+     * <ul>
+     *   <li>Ciudadano: su historial, del más reciente al más antiguo (HU-10).</li>
+     *   <li>Administrador: la bandeja de revisión ordenada por prioridad y fecha (HU-05). Sin filtro de
+     *       estado muestra los pendientes que no son duplicados.</li>
+     *   <li>Operador: sus reportes sin resolver (HU-08).</li>
+     * </ul>
+     * Después se aplican los filtros opcionales (estado, tipo, prioridad, sector).
      */
     public List<ReporteResponse> listarReportes(String usuarioId, Rol rol, FiltroReportes filtro) {
-        Stream<Reporte> reportes = switch (rol) {
-            case CIUDADANO -> reporteRepository.findByCiudadanoOrderByFechaReporteDesc(buscarCiudadano(usuarioId)).stream();
-            case ADMINISTRADOR -> (filtro.estado() == null
-                    ? reporteRepository.findByEstado(EstadoReporte.PENDIENTE).stream().filter(Reporte::estaPendiente)
-                    : reporteRepository.findByEstado(filtro.estado()).stream())
-                    .sorted(Comparator.comparing((Reporte r) -> r.getPrioridad().orden())
-                            .thenComparing(Reporte::getFechaReporte));
-            case OPERADOR -> reportesDeOperador(usuarioId, "prioridad").stream();
+        List<Reporte> reportes = switch (rol) {
+            case CIUDADANO -> reporteRepository.findByCiudadanoOrderByFechaReporteDesc(buscarCiudadano(usuarioId));
+            case ADMINISTRADOR -> bandejaDeRevision(filtro.estado());
+            case OPERADOR -> reportesDeOperador(usuarioId, "prioridad");
         };
-        return reportes.filter(filtro::cumple).map(ReporteResponse::de).toList();
+        return reportes.stream().filter(filtro::cumple).map(ReporteResponse::de).toList();
     }
 
+    /** Devuelve un reporte solo si quien pregunta tiene derecho a verlo; si no, responde "no encontrado". */
     public ReporteResponse obtenerReporte(String id, String usuarioId, Rol rol) {
         Reporte reporte = buscar(id);
-        boolean permitido = switch (rol) {
+        boolean puedeVerlo = switch (rol) {
             case ADMINISTRADOR -> true;
             case CIUDADANO -> reporte.esDelCiudadano(usuarioId);
             case OPERADOR -> reporte.estaAsignadoA(usuarioId);
         };
-        if (!permitido) {
+        if (!puedeVerlo) {
             throw new RecursoNoEncontradoException("Reporte", id);
         }
         return ReporteResponse.de(reporte);
     }
 
-    /** "Consultar reportes" (lo consume Estadísticas e informes). */
+    /** Servicio "Consultar reportes" que usa el componente Estadísticas e informes. */
     public List<Reporte> consultarReportes() {
         return reporteRepository.findAll();
     }
 
-    // ------------------------------------------------------------------ HU-05: clasificación manual
+    // ============================================================ HU-05: clasificación manual
 
     public ReporteResponse clasificarReporte(String id, TipoResiduo tipo, Prioridad prioridad) {
         Reporte reporte = buscar(id);
@@ -128,15 +161,20 @@ public class ReporteService {
         return ReporteResponse.de(reporteRepository.save(reporte));
     }
 
-    // ------------------------------------------------------------------ HU-06: duplicados
+    // ============================================================ HU-06: duplicados
 
+    /**
+     * Busca reportes abiertos del mismo tipo a menos de 50 metros (radio configurable) usando el índice
+     * geográfico de MongoDB, y devuelve cada uno con su distancia.
+     */
     public List<PosibleDuplicadoResponse> posiblesDuplicados(String id) {
         Reporte reporte = buscar(id);
         double radio = propiedades.duplicados().radioMetros();
         return reporteRepository.buscarAbiertosCercanos(reporte.getUbicacion(), radio, reporte.getTipoResiduo()).stream()
-                .filter(r -> !r.getId().equals(reporte.getId()) && !r.esDuplicado())
-                .map(r -> new PosibleDuplicadoResponse(ReporteResponse.de(r),
-                        Geo.distanciaMetros(reporte.getLatitud(), reporte.getLongitud(), r.getLatitud(), r.getLongitud())))
+                .filter(cercano -> !cercano.getId().equals(reporte.getId()) && !cercano.esDuplicado())
+                .map(cercano -> new PosibleDuplicadoResponse(ReporteResponse.de(cercano),
+                        Geo.distanciaMetros(reporte.getLatitud(), reporte.getLongitud(),
+                                cercano.getLatitud(), cercano.getLongitud())))
                 .toList();
     }
 
@@ -152,12 +190,16 @@ public class ReporteService {
         return ReporteResponse.de(reporteRepository.save(reporte));
     }
 
-    // ------------------------------------------------------------------ HU-07: asignación sin doble asignación
+    // ============================================================ HU-07: asignar sin doble asignación
 
+    /**
+     * Asigna (o reasigna) el reporte a un operador disponible y avisa al ciudadano.
+     * La doble asignación se evita en dos niveles: {@link Reporte#asignar} rechaza un reporte que ya tiene
+     * operador, y el campo {@code @Version} rechaza dos guardados simultáneos del mismo reporte.
+     */
     public ReporteResponse asignarReporte(String id, String operadorId, boolean reasignar) {
         Reporte reporte = buscar(id);
-        Operador operador = operadorRepository.findById(operadorId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Operador", operadorId));
+        Operador operador = buscarOperador(operadorId);
         validarDisponibilidad(operador);
         EstadoReporte estadoAnterior = reporte.getEstado();
         if (reasignar) {
@@ -172,33 +214,24 @@ public class ReporteService {
         return ReporteResponse.de(guardado);
     }
 
-    /** Operadores disponibles con su número de reportes sin resolver (HU-07, criterio 4). */
-    public List<OperadorResponse> operadoresParaAsignar() {
-        return operadorRepository.findByDisponibleTrueOrderByNombreAsc().stream()
-                .map(o -> new OperadorResponse(o.getId(), o.getNombre(), o.getCorreo(), o.isDisponible(),
-                        reporteRepository.countByOperadorAndEstadoNot(o, EstadoReporte.RESUELTO)))
+    /** Carga de trabajo de un operador: cuántos reportes tiene sin resolver (HU-07, criterio 4). */
+    public long contarSinResolver(Operador operador) {
+        return reporteRepository.countByOperadorAndEstadoNot(operador, EstadoReporte.RESUELTO);
+    }
+
+    // ============================================================ HU-08 y HU-09: apoyo a AtencionService
+
+    /** Reportes sin resolver de un operador, ordenados por prioridad (por defecto) o por fecha. */
+    public List<Reporte> reportesDeOperador(String operadorId, String orden) {
+        Comparator<Reporte> comparador = "fecha".equalsIgnoreCase(orden)
+                ? Comparator.comparing(Reporte::getFechaReporte)
+                : POR_PRIORIDAD_Y_FECHA;
+        return reporteRepository.findByOperadorAndEstadoNot(buscarOperador(operadorId), EstadoReporte.RESUELTO).stream()
+                .sorted(comparador)
                 .toList();
     }
 
-    private void validarDisponibilidad(Operador operador) {
-        if (!operador.isDisponible()) {
-            throw new ReglaNegocioException("El operador " + operador.getNombre() + " no está disponible");
-        }
-    }
-
-    // ------------------------------------------------------------------ apoyo a Asignación y atención (HU-08, HU-09)
-
-    /** Reportes sin resolver de un operador, ordenados por prioridad o por fecha (HU-08, criterio 4). */
-    public List<Reporte> reportesDeOperador(String operadorId, String orden) {
-        Operador operador = operadorRepository.findById(operadorId)
-                .orElseThrow(() -> new RecursoNoEncontradoException("Operador", operadorId));
-        Comparator<Reporte> comparador = "fecha".equalsIgnoreCase(orden)
-                ? Comparator.comparing(Reporte::getFechaReporte)
-                : Comparator.comparing((Reporte r) -> r.getPrioridad().orden()).thenComparing(Reporte::getFechaReporte);
-        return reporteRepository.findByOperadorAndEstadoNot(operador, EstadoReporte.RESUELTO).stream()
-                .sorted(comparador).toList();
-    }
-
+    /** Busca un reporte verificando que esté asignado a ese operador. */
     public Reporte buscarParaOperador(String id, String operadorId) {
         Reporte reporte = buscar(id);
         if (!reporte.estaAsignadoA(operadorId)) {
@@ -207,14 +240,28 @@ public class ReporteService {
         return reporte;
     }
 
-    /** "Consultar y actualizar estado del reporte": guarda el cambio y notifica al ciudadano. */
+    /** Servicio "Consultar y actualizar estado del reporte": guarda el cambio y notifica al ciudadano. */
     public Reporte actualizarEstado(Reporte reporte) {
         Reporte guardado = guardarConControlDeConcurrencia(reporte);
         notificacionService.notificarCambioEstado(guardado);
         return guardado;
     }
 
-    // ------------------------------------------------------------------ apoyo
+    // ============================================================ métodos privados de apoyo
+
+    /** Solo se asignan reportes a operadores disponibles (HU-07). */
+    private void validarDisponibilidad(Operador operador) {
+        if (!operador.isDisponible()) {
+            throw new ReglaNegocioException("El operador " + operador.getNombre() + " no está disponible");
+        }
+    }
+
+    private List<Reporte> bandejaDeRevision(EstadoReporte estado) {
+        List<Reporte> reportes = estado == null
+                ? reporteRepository.findByEstado(EstadoReporte.PENDIENTE).stream().filter(Reporte::estaPendiente).toList()
+                : reporteRepository.findByEstado(estado);
+        return reportes.stream().sorted(POR_PRIORIDAD_Y_FECHA).toList();
+    }
 
     private Reporte buscar(String id) {
         return reporteRepository.findById(id).orElseThrow(() -> new RecursoNoEncontradoException("Reporte", id));
@@ -225,6 +272,12 @@ public class ReporteService {
                 .orElseThrow(() -> new RecursoNoEncontradoException("Ciudadano", ciudadanoId));
     }
 
+    private Operador buscarOperador(String operadorId) {
+        return operadorRepository.findById(operadorId)
+                .orElseThrow(() -> new RecursoNoEncontradoException("Operador", operadorId));
+    }
+
+    /** Si otro usuario guardó el mismo reporte un instante antes, MongoDB rechaza este guardado (@Version). */
     private Reporte guardarConControlDeConcurrencia(Reporte reporte) {
         try {
             return reporteRepository.save(reporte);
@@ -233,7 +286,10 @@ public class ReporteService {
         }
     }
 
-    /** Filtros opcionales de la bandeja y del historial. */
+    /**
+     * Filtros opcionales de la bandeja y del historial. Un filtro en null significa "no filtrar por eso".
+     * <b>Experto en información:</b> el propio filtro decide si un reporte lo cumple.
+     */
     public record FiltroReportes(EstadoReporte estado, TipoResiduo tipoResiduo, Prioridad prioridad, String sector) {
         boolean cumple(Reporte r) {
             return (estado == null || r.estadoVisible() == estado)

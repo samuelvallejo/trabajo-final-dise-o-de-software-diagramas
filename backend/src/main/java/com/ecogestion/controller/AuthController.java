@@ -23,7 +23,20 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Registro e inicio de sesión del ciudadano (HU-01). */
+/**
+ * API de registro e inicio de sesión (HU-01), rutas bajo {@code /api/auth}. El inicio de sesión crea una sesión
+ * HTTP: el navegador recibe una cookie y la envía en las siguientes peticiones. El cierre de sesión
+ * ({@code POST /api/auth/logout}) lo atiende Spring Security (ver {@code SeguridadConfig}).
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Controlador:</b> es el primer objeto que recibe la operación del sistema que llega desde la
+ *       interfaz (una petición HTTP). Solo traduce la petición, delega en el servicio y devuelve la
+ *       respuesta; no tiene reglas de negocio.</li>
+ *   <li><b>Bajo acoplamiento:</b> recibe y devuelve DTOs (records), así los cambios internos del modelo
+ *       no rompen la API que usa el frontend.</li>
+ * </ul>
+ */
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {

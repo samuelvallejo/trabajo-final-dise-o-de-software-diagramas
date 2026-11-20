@@ -7,8 +7,13 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
- * Canal por defecto cuando no hay servidor SMTP configurado: escribe la notificación en el log.
- * Permite probar el flujo de notificaciones sin credenciales de correo.
+ * Canal por defecto cuando no hay servidor SMTP: escribe la notificación en el log de la aplicación.
+ * Permite probar todo el flujo de notificaciones sin credenciales de correo.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Polimorfismo:</b> implementación de {@link CanalNotificacion}.</li>
+ * </ul>
  */
 @Component
 @ConditionalOnProperty(name = "ecogestion.notificaciones.canal", havingValue = "registro", matchIfMissing = true)

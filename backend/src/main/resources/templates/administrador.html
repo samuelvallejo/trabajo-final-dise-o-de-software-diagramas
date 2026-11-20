@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!--
+  Página del administrador (requiere sesión con rol ADMINISTRADOR).
+  - Panel con indicadores. HU-15
+  - Bandeja de reportes: clasificar, revisar duplicados y asignar a un operador. HU-05, HU-06, HU-07
+  - Operadores de limpieza: crear y marcar disponibles u ocupados. HU-07
+  - Informe por periodo con descarga en CSV. HU-15
+  - Contenido educativo y puntos de recolección. HU-14, HU-13
+  La lógica está en /js/administrador.js.
+-->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragmentos :: cabeza('Administrador')}"></head>
+<body>
+<header th:replace="~{fragmentos :: barra('Administrador')}"></header>
+
+<main>
+    <section>
+        <h2>Panel</h2>
+        <div id="panel" class="indicadores"></div>
+        <h3>Problemas más frecuentes</h3>
+        <div id="frecuentes" class="ayuda"></div>
+        <h3>Sectores con más reportes</h3>
+        <div id="sectores" class="ayuda"></div>
+    </section>
+
+    <section>
+        <h2>Bandeja de reportes</h2>
+        <p class="ayuda">Sin filtro de estado se muestran los pendientes de revisión, ordenados por prioridad y fecha.</p>
+        <div class="fila">
+            <div>
+                <label for="fEstado">Estado</label>
+                <select id="fEstado">
+                    <option value="">Pendientes de revisión</option>
+                    <option th:each="e : ${estados}" th:value="${e}" th:text="${e}">ESTADO</option>
+                </select>
+            </div>
+            <div>
+                <label for="fTipo">Tipo</label>
+                <select id="fTipo">
+                    <option value="">Todos</option>
+                    <option th:each="t : ${tipos}" th:value="${t}" th:text="${t}">TIPO</option>
+                </select>
+            </div>
+            <div>
+                <label for="fPrioridad">Prioridad</label>
+                <select id="fPrioridad">
+                    <option value="">Todas</option>
+                    <option th:each="p : ${prioridades}" th:value="${p}" th:text="${p}">PRIORIDAD</option>
+                </select>
+            </div>
+            <div><label for="fSector">Sector</label><select id="fSector"></select></div>
+            <div style="flex:0"><button type="button" onclick="cargarBandeja()">Filtrar</button></div>
+        </div>
+        <div id="bandeja"></div>
+    </section>
+
+    <section id="seccionDetalle" class="oculto">
+        <h2>Reporte seleccionado</h2>
+        <div id="detalle"></div>
+        <div id="msgDetalle" class="mensaje"></div>
+        <div class="columnas">
+            <div>
+                <h3>Clasificar (HU-05)</h3>
+                <div class="fila">
+                    <select id="claseTipo">
+                        <option th:each="t : ${tipos}" th:value="${t}" th:text="${t}">TIPO</option>
+                    </select>
+                    <select id="clasePrioridad">
+                        <option th:each="p : ${prioridades}" th:value="${p}" th:text="${p}">PRIORIDAD</option>
+                    </select>
+                </div>
+                <button type="button" onclick="clasificar()">Guardar clasificación</button>
+            </div>
+            <div>
+                <h3>Asignar a un operador (HU-07)</h3>
+                <select id="operadorAsignar"></select>
+                <label><input id="reasignar" type="checkbox" style="width:auto"> Reasignar (cambiar el operador actual)</label>
+                <button type="button" onclick="asignar()">Asignar</button>
+            </div>
+        </div>
+        <h3>Posibles duplicados a menos de 50 m (HU-06)</h3>
+        <div id="duplicados"></div>
+    </section>
+
+    <div class="columnas">
+        <section>
+            <h2>Operadores de limpieza</h2>
+            <div id="operadores"></div>
+            <h3>Nuevo operador</h3>
+            <form id="formOperador">
+                <div class="fila">
+                    <div><label for="opNombre">Nombre</label><input id="opNombre" required></div>
+                    <div><label for="opDocumento">Documento</label><input id="opDocumento" required></div>
+                </div>
+                <label for="opCorreo">Correo</label><input id="opCorreo" type="email" required>
+                <label for="opContrasena">Contraseña inicial</label><input id="opContrasena" type="password" required>
+                <button type="submit">Crear operador</button>
+            </form>
+            <div id="msgOperador" class="mensaje"></div>
+        </section>
+
+        <section>
+            <h2>Informe por periodo</h2>
+            <div class="fila">
+                <div><label for="desde">Desde</label><input id="desde" type="date"></div>
+                <div><label for="hasta">Hasta</label><input id="hasta" type="date"></div>
+            </div>
+            <label for="iSector">Sector</label><select id="iSector"></select>
+            <button type="button" onclick="generarInforme()">Generar</button>
+            <button type="button" class="secundario" onclick="descargarCsv()">Descargar CSV</button>
+            <div id="msgInforme" class="mensaje"></div>
+            <div id="informe"></div>
+        </section>
+    </div>
+
+    <div class="columnas">
+        <section>
+            <h2>Contenido educativo</h2>
+            <div id="contenidos"></div>
+            <h3>Nuevo contenido</h3>
+            <form id="formContenido">
+                <label for="cTitulo">Título</label><input id="cTitulo" required>
+                <label for="cCategoria">Categoría</label>
+                <select id="cCategoria">
+                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">CATEGORIA</option>
+                </select>
+                <label for="cCuerpo">Texto</label><textarea id="cCuerpo" required></textarea>
+                <label><input id="cPublicar" type="checkbox" style="width:auto" checked> Publicar de inmediato</label>
+                <button type="submit">Guardar contenido</button>
+            </form>
+            <div id="msgContenido" class="mensaje"></div>
+        </section>
+
+        <section>
+            <h2>Puntos de recolección</h2>
+            <div id="puntosAdmin"></div>
+            <h3>Nuevo punto</h3>
+            <form id="formPunto">
+                <label for="pNombre">Nombre</label><input id="pNombre" required>
+                <label for="pDireccion">Dirección</label><input id="pDireccion" required>
+                <div class="fila">
+                    <div><label for="pLatitud">Latitud</label><input id="pLatitud" type="number" step="any" required></div>
+                    <div><label for="pLongitud">Longitud</label><input id="pLongitud" type="number" step="any" required></div>
+                </div>
+                <label for="pMateriales">Materiales (Ctrl + clic para elegir varios)</label>
+                <select id="pMateriales" multiple required>
+                    <option th:each="m : ${materiales}" th:value="${m}" th:text="${m}">MATERIAL</option>
+                </select>
+                <label for="pHorario">Horario de atención</label><input id="pHorario" required placeholder="Lunes a viernes 8:00–17:00">
+                <button type="submit">Crear punto</button>
+            </form>
+            <div id="msgPunto" class="mensaje"></div>
+        </section>
+    </div>
+</main>
+
+<script th:src="@{/js/administrador.js}"></script>
+</body>
+</html>

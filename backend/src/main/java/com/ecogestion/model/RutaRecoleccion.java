@@ -9,8 +9,16 @@ import java.util.Comparator;
 import java.util.List;
 
 /**
- * Ruta de recolección que cubre uno o varios sectores y tiene sus horarios (HU-12).
- * El recorrido es la lista de coordenadas que la vista web dibuja en el mapa.
+ * Ruta del carro recolector que cubre uno o varios sectores en ciertos horarios (colección {@code rutas}, HU-12).
+ * El recorrido es la lista de coordenadas que se puede dibujar en un mapa.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Creador:</b> la ruta contiene sus {@link HorarioRecoleccion} y sus {@link Coordenada}, por eso
+ *       los agrega y ordena ella misma.</li>
+ *   <li><b>Experto en información:</b> conoce sus sectores, así que responde si cubre un sector
+ *       ({@link #cubreSector}).</li>
+ * </ul>
  */
 @Document("rutas")
 public class RutaRecoleccion {

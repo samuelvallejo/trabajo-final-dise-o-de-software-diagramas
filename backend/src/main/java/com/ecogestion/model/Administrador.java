@@ -3,8 +3,11 @@ package com.ecogestion.model;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * Administrador de la entidad ambiental: revisa, clasifica y asigna reportes, y mantiene horarios,
- * puntos de recolección y contenido educativo. Implementa el rol de {@code GestorReportes} del modelo inicial.
+ * Administrador de la entidad ambiental (colección {@code administradores}): revisa, clasifica y asigna
+ * reportes, y mantiene horarios, puntos de recolección y contenido educativo.
+ * Cumple el papel de {@code GestorReportes} del modelo de clases inicial (vista lógica).
+ *
+ * <p><b>Patrón GRASP — Polimorfismo:</b> sobrescribe {@link #getRol()} para identificarse como ADMINISTRADOR.
  */
 @Document("administradores")
 public class Administrador extends Usuario {

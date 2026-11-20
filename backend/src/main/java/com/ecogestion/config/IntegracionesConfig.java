@@ -7,7 +7,14 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Elige la implementación del servicio de mapas según la configuración.
+ * Elige al arrancar qué implementación de {@link ServicioMapas} usar: Google Geocoding si existe la variable
+ * GOOGLE_MAPS_API_KEY, o una versión sin proveedor externo si no existe.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Polimorfismo y Variaciones protegidas:</b> el resto del sistema solo conoce la interfaz
+ *       {@link ServicioMapas}; la decisión de qué proveedor usar está en un único lugar.</li>
+ * </ul>
  */
 @Configuration
 public class IntegracionesConfig {

@@ -1,6 +1,6 @@
 package com.ecogestion.model;
 
-/** Categorías del contenido de educación ambiental (HU-14). */
+/** Categorías con las que se organiza y filtra el contenido de educación ambiental (HU-14). */
 public enum CategoriaContenido {
     SEPARACION_RESIDUOS,
     RECICLAJE,

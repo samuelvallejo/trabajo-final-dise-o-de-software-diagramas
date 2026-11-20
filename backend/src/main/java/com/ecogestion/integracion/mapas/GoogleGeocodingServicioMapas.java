@@ -11,7 +11,13 @@ import java.util.Optional;
 
 /**
  * Implementación con la Geocoding API de Google Maps Platform (HTTPS:443 en la vista de despliegue).
- * Se usa cuando está definida la variable GOOGLE_MAPS_API_KEY.
+ * Se usa cuando está definida la variable GOOGLE_MAPS_API_KEY. Si Google falla, devuelve vacío y el
+ * reporte se guarda igual, sin dirección.
+ *
+ * <p><b>Patrones GRASP:</b>
+ * <ul>
+ *   <li><b>Polimorfismo:</b> implementación concreta de {@link ServicioMapas}.</li>
+ * </ul>
  */
 public class GoogleGeocodingServicioMapas implements ServicioMapas {
 
