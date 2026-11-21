@@ -87,7 +87,7 @@ es privado para que nadie se salte el flujo de estados. Spring Data guarda y lee
 así que no necesita setters. Solo existen los getters que alguien usa (para armar las respuestas de la API, las
 notificaciones o las estadísticas); son de solo lectura y las listas se devuelven inmodificables. El hash de la
 contraseña solo lo lee Spring Security y nunca sale en la API. Las vistas lógica y de desarrollo muestran esta
-regla con una nota y separan las "consultas de solo lectura".
+regla con una nota de encapsulamiento.
 
 ### Frontend
 

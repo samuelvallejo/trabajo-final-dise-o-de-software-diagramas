@@ -27,7 +27,6 @@ class GestorReportes {
   + registrarOperador(o : Operador) : void
   + registrarReporte(c : Ciudadano, descripcion : String) : Reporte
   + asignarReporte(r : Reporte, o : Operador) : void
-  .. consultas de solo lectura ..
   + consultarReportes() : List<Reporte>
   + consultarOperadoresDisponibles() : List<Operador>
 }
@@ -43,7 +42,6 @@ class Ciudadano {
   + Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String, sector : String)
   + actualizarPerfil(nombre : String, correo : String, sector : String) : void
   + cambiarContrasena(actual : String, nueva : String) : void
-  .. consultas de solo lectura ..
   + getId() : String
   + getNombre() : String
   + getCorreo() : String
@@ -58,7 +56,6 @@ class Operador {
   + Operador(nombre : String)
   + marcarOcupado() : void
   + marcarDisponible() : void
-  .. consultas de solo lectura ..
   + getId() : String
   + getNombre() : String
   + isDisponible() : boolean
@@ -92,7 +89,6 @@ class Reporte {
   + registrarCierre(descripcion : String, evidencias : List<String>) : void
   + marcarComoDuplicado(original : Reporte) : void
   - cambiarEstado(nuevo : EstadoReporte) : void
-  .. consultas de solo lectura ..
   + getId() : String
   + getDescripcion() : String
   + getEstado() : EstadoReporte

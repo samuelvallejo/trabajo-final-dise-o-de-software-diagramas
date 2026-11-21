@@ -115,7 +115,6 @@ package "model" #FFFFFF {
     + marcarComoDuplicado(original : Reporte) : void
     + desvincularDuplicado() : void
     - cambiarEstado(nuevo : EstadoReporte) : void
-    .. consultas de solo lectura (ReporteResponse, notificaciones, estadísticas) ..
     + getId() : String
     + getEstado() : EstadoReporte
     + estadoVisible() : EstadoReporte
@@ -145,7 +144,6 @@ package "model" #FFFFFF {
     + tieneIntentosFallidos() : boolean
     + reiniciarIntentos() : void
     # actualizarNombreYCorreo(nombre : String, correo : String) : void
-    .. consultas de solo lectura ..
     + getId() : String
     + getNombre() : String
     + getDocumento() : String
@@ -158,7 +156,6 @@ package "model" #FFFFFF {
     + Ciudadano(nombre : String, documento : String, correo : String, contrasenaHash : String, sector : String)
     + getRol() : Rol
     + actualizarPerfil(nombre : String, correo : String, sector : String) : void
-    .. consultas de solo lectura ..
     + getSector() : String
   }
   class Operador <<Document>> {
@@ -168,7 +165,6 @@ package "model" #FFFFFF {
     + getRol() : Rol
     + marcarOcupado() : void
     + marcarDisponible() : void
-    .. consultas de solo lectura ..
     + isDisponible() : boolean
   }
   note as Encapsulamiento
