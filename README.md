@@ -142,6 +142,9 @@ Los errores se devuelven en formato *Problem Details* (`status`, `title`, `detai
 
 ### Despliegue en Railway
 
+Aplicación publicada: **https://trabajo-final-dise-o-de-software-diagramas-production.up.railway.app**
+(base de datos en MongoDB Atlas, clúster gratuito en AWS N. Virginia; servicio de Railway en US East).
+
 1. Nuevo proyecto en Railway → *Deploy from GitHub repo* → este repositorio, con *Root Directory* `backend`
    (Railway detecta Maven y Java 21 y construye el `.jar`).
 2. Agregar un servicio **MongoDB** al proyecto.
