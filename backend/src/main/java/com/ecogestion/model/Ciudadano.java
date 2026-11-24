@@ -38,6 +38,12 @@ public class Ciudadano extends Usuario {
         this.sector = nuevoSector;
     }
 
+    @Override
+    public void guardarEn(RegistroUsuarios registro) {
+        registro.guardar(this);
+    }
+
     /** Se usa para mostrar los horarios y puntos de recolección de su sector (HU-12, HU-13). */
+    @Override
     public String getSector() { return sector; }
 }

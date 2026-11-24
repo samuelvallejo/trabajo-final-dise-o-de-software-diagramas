@@ -60,7 +60,8 @@ backend/src/main/java/com/ecogestion
 
 backend/src/main/resources
 ├── templates    páginas HTML (Thymeleaf): index, ciudadano, administrador, operador y fragmentos comunes
-└── static       css/estilos.css y js/ (api.js y mapas.js con las funciones comunes + un archivo por página)
+└── static       css/estilos.css y js/: clases JavaScript (api.js: ClienteApi, Sesion, Formato, Plantillas y la clase
+                 base Pagina; mapas.js: Mapa; y una subclase de Pagina por página)
 ```
 
 Cada clase tiene un comentario que explica qué hace, cómo funciona y qué patrón GRASP aplica y por qué.
@@ -69,14 +70,20 @@ Resumen:
 | Patrón GRASP | Dónde se aplica | Por qué |
 |---|---|---|
 | Controlador | `controller/*Controller` | Reciben las peticiones HTTP y delegan en los servicios; no tienen reglas de negocio |
-| Experto en información | `Reporte`, `Usuario`, `Operador`, `EstadoReporte`, `TipoResiduo`, `Sector`, `PuntoRecoleccion`... | Cada regla está en la clase que tiene los datos (por ejemplo, `Reporte.asignar` impide la doble asignación) |
-| Creador | `ReporteService` crea `Reporte`, `UsuarioService` crea usuarios, `NotificacionService` crea `Notificacion` | Quien tiene los datos de inicialización crea el objeto |
+| Experto en información | `Reporte`, `Usuario`, `Operador`, `EstadoReporte`, `TipoResiduo`, `Coordenada`, `EstadisticasReportes`, `Notificacion`... | Cada regla está en la clase que tiene los datos: `Reporte.asignar` impide la doble asignación, `Coordenada.distanciaMetros` calcula distancias, `EstadisticasReportes` calcula los indicadores y la `Notificacion` se redacta sola |
+| Creador | `ReporteService` crea `Reporte`, `UsuarioService` crea usuarios, `Notificacion.porCambioDeEstado` crea cada aviso | Quien tiene los datos de inicialización crea el objeto |
 | Alta cohesión | Un servicio por componente de la vista funcional | Cada clase tiene un solo tema (reportes, usuarios, notificaciones...) |
 | Bajo acoplamiento | DTOs en la API, servicios que usan servicios de otros componentes y no sus repositorios | Un cambio interno no se propaga al resto |
-| Polimorfismo | `Usuario.getRol()`, `CanalNotificacion`, `ServicioMapas`, `AlmacenamientoImagenes` | Se cambia el comportamiento sin if/else por tipo |
-| Fabricación pura | Servicios, repositorios, `ManejadorErrores`, `ValidadorFotos`, `Geo` | Clases técnicas que no existen en el caso de estudio pero mantienen limpio el dominio |
-| Indirección | Repositorios, `CanalNotificacion`, `CuentaUsuario`, `EventosAutenticacion` | Un intermediario desacopla dos partes (servicio ↔ MongoDB, servicio ↔ SMTP, dominio ↔ Spring Security) |
+| Polimorfismo | `Rol` (cada rol decide qué reportes ve), `Usuario.getRol()`/`guardarEn()`/`getSector()`, `CanalNotificacion`, `ServicioMapas`, `AlmacenamientoImagenes`; en el frontend, las subclases de `Pagina` | Se cambia el comportamiento sin `switch`, `if/else` ni `instanceof` por tipo |
+| Fabricación pura | Servicios, repositorios, `ManejadorErrores`, `ValidadorFotos` | Clases técnicas que no existen en el caso de estudio pero mantienen limpio el dominio |
+| Indirección | Repositorios, `CatalogoReportes`, `RegistroUsuarios`, `CanalNotificacion`, `CuentaUsuario`, `EventosAutenticacion`; en el frontend, `ClienteApi` y `Mapa` | Un intermediario desacopla dos partes (servicio ↔ MongoDB, servicio ↔ SMTP, dominio ↔ Spring Security) |
 | Variaciones protegidas | Interfaces de `integracion` y `EcoGestionProperties` | Cambiar de proveedor de correo, mapas o almacenamiento, o un parámetro, no obliga a tocar la lógica |
+
+**Orientación a objetos sin lógica procedimental.** No hay `switch` ni `instanceof` sobre tipos: lo que cambia
+según el rol, el tipo de usuario o el estado lo resuelve el propio objeto (`Rol.puedeVer`, `Usuario.guardarEn`,
+`EstadoReporte.etiqueta`). Los cálculos que antes eran funciones estáticas viven en objetos: `Coordenada` (distancias),
+`EstadisticasReportes` (indicadores del panel e informes) y el informe, que se exporta a CSV con `aCsv()`. En el
+frontend, cada página es una clase que hereda de `Pagina` (patrón Método plantilla).
 
 **Encapsulamiento (sin get/set casuales).** Las clases del modelo no tienen setters: cada cambio pasa por un
 método que expresa la acción y valida su regla (`Reporte.asignar`, `Reporte.registrarCierre`,

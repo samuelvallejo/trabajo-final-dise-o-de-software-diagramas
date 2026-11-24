@@ -59,7 +59,7 @@ public class EstadisticaController {
     public ResponseEntity<byte[]> informeCsv(@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
                                              @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta,
                                              @RequestParam(required = false) String sector) {
-        String csv = estadisticaService.exportarCsv(informe(desde, hasta, sector));
+        String csv = informe(desde, hasta, sector).aCsv();
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"informe-ecogestion-" + desde + "-" + hasta + ".csv\"")
                 .contentType(new MediaType("text", "csv", StandardCharsets.UTF_8))

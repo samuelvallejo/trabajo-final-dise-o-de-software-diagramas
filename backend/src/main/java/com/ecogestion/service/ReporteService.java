@@ -9,6 +9,7 @@ import com.ecogestion.excepcion.RecursoNoEncontradoException;
 import com.ecogestion.excepcion.ReglaNegocioException;
 import com.ecogestion.integracion.imagenes.AlmacenamientoImagenes;
 import com.ecogestion.integracion.mapas.ServicioMapas;
+import com.ecogestion.model.CatalogoReportes;
 import com.ecogestion.model.Ciudadano;
 import com.ecogestion.model.EstadoReporte;
 import com.ecogestion.model.Operador;
@@ -20,7 +21,6 @@ import com.ecogestion.model.TipoResiduo;
 import com.ecogestion.repository.CiudadanoRepository;
 import com.ecogestion.repository.OperadorRepository;
 import com.ecogestion.repository.ReporteRepository;
-import com.ecogestion.util.Geo;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -54,7 +54,7 @@ import java.util.List;
  * Las reglas de negocio <b>no</b> están aquí: viven en {@link Reporte} (Experto en información).
  */
 @Service
-public class ReporteService {
+public class ReporteService implements CatalogoReportes {
 
     /** Orden de atención: primero prioridad ALTA y, a igual prioridad, el reporte más antiguo. */
     private static final Comparator<Reporte> POR_PRIORIDAD_Y_FECHA =
@@ -116,36 +116,46 @@ public class ReporteService {
     // ============================================================ HU-05 y HU-10: consultar reportes
 
     /**
-     * Lista reportes según quién pregunta:
-     * <ul>
-     *   <li>Ciudadano: su historial, del más reciente al más antiguo (HU-10).</li>
-     *   <li>Administrador: la bandeja de revisión ordenada por prioridad y fecha (HU-05). Sin filtro de
-     *       estado muestra los pendientes que no son duplicados.</li>
-     *   <li>Operador: sus reportes sin resolver (HU-08).</li>
-     * </ul>
-     * Después se aplican los filtros opcionales (estado, tipo, prioridad, sector).
+     * Lista los reportes que le corresponden a quien pregunta y aplica los filtros opcionales.
+     * Qué lista ve cada uno lo decide su {@link Rol} (Polimorfismo): el ciudadano su historial, el
+     * administrador la bandeja de revisión y el operador sus asignaciones. Este servicio solo le ofrece
+     * las consultas a través de la interfaz {@link CatalogoReportes}.
      */
     public List<ReporteResponse> listarReportes(String usuarioId, Rol rol, FiltroReportes filtro) {
-        List<Reporte> reportes = switch (rol) {
-            case CIUDADANO -> reporteRepository.findByCiudadanoOrderByFechaReporteDesc(buscarCiudadano(usuarioId));
-            case ADMINISTRADOR -> bandejaDeRevision(filtro.estado());
-            case OPERADOR -> reportesDeOperador(usuarioId, "prioridad");
-        };
-        return reportes.stream().filter(filtro::cumple).map(ReporteResponse::de).toList();
+        return rol.reportesVisibles(this, usuarioId, filtro.estado()).stream()
+                .filter(filtro::cumple)
+                .map(ReporteResponse::de)
+                .toList();
     }
 
-    /** Devuelve un reporte solo si quien pregunta tiene derecho a verlo; si no, responde "no encontrado". */
+    /** Devuelve un reporte solo si el rol de quien pregunta le permite verlo; si no, responde "no encontrado". */
     public ReporteResponse obtenerReporte(String id, String usuarioId, Rol rol) {
         Reporte reporte = buscar(id);
-        boolean puedeVerlo = switch (rol) {
-            case ADMINISTRADOR -> true;
-            case CIUDADANO -> reporte.esDelCiudadano(usuarioId);
-            case OPERADOR -> reporte.estaAsignadoA(usuarioId);
-        };
-        if (!puedeVerlo) {
+        if (!rol.puedeVer(reporte, usuarioId)) {
             throw new RecursoNoEncontradoException("Reporte", id);
         }
         return ReporteResponse.de(reporte);
+    }
+
+    // ============================================================ CatalogoReportes (consultas por rol)
+
+    @Override
+    public List<Reporte> historialDelCiudadano(String ciudadanoId) {
+        return reporteRepository.findByCiudadanoOrderByFechaReporteDesc(buscarCiudadano(ciudadanoId));
+    }
+
+    /** Sin estado: los pendientes que no son duplicados. Siempre ordenados por prioridad y fecha. */
+    @Override
+    public List<Reporte> bandejaDeRevision(EstadoReporte estado) {
+        List<Reporte> reportes = estado == null
+                ? reporteRepository.findByEstado(EstadoReporte.PENDIENTE).stream().filter(Reporte::estaPendiente).toList()
+                : reporteRepository.findByEstado(estado);
+        return reportes.stream().sorted(POR_PRIORIDAD_Y_FECHA).toList();
+    }
+
+    @Override
+    public List<Reporte> pendientesDelOperador(String operadorId) {
+        return reportesDeOperador(operadorId, "prioridad");
     }
 
     /** Servicio "Consultar reportes" que usa el componente Estadísticas e informes. */
@@ -172,9 +182,7 @@ public class ReporteService {
         double radio = propiedades.duplicados().radioMetros();
         return reporteRepository.buscarAbiertosCercanos(reporte.getUbicacion(), radio, reporte.getTipoResiduo()).stream()
                 .filter(cercano -> !cercano.getId().equals(reporte.getId()) && !cercano.esDuplicado())
-                .map(cercano -> new PosibleDuplicadoResponse(ReporteResponse.de(cercano),
-                        Geo.distanciaMetros(reporte.getLatitud(), reporte.getLongitud(),
-                                cercano.getLatitud(), cercano.getLongitud())))
+                .map(cercano -> new PosibleDuplicadoResponse(ReporteResponse.de(cercano), reporte.distanciaMetrosA(cercano)))
                 .toList();
     }
 
@@ -249,18 +257,9 @@ public class ReporteService {
 
     // ============================================================ métodos privados de apoyo
 
-    /** Solo se asignan reportes a operadores disponibles (HU-07). */
+    /** Solo se asignan reportes a operadores disponibles (HU-07); la regla la aplica el propio operador. */
     private void validarDisponibilidad(Operador operador) {
-        if (!operador.isDisponible()) {
-            throw new ReglaNegocioException("El operador " + operador.getNombre() + " no está disponible");
-        }
-    }
-
-    private List<Reporte> bandejaDeRevision(EstadoReporte estado) {
-        List<Reporte> reportes = estado == null
-                ? reporteRepository.findByEstado(EstadoReporte.PENDIENTE).stream().filter(Reporte::estaPendiente).toList()
-                : reporteRepository.findByEstado(estado);
-        return reportes.stream().sorted(POR_PRIORIDAD_Y_FECHA).toList();
+        operador.verificarDisponible();
     }
 
     private Reporte buscar(String id) {

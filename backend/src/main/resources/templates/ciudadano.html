@@ -26,7 +26,7 @@
                 <option th:each="t : ${tipos}" th:value="${t}" th:text="${t}">TIPO</option>
             </select>
             <label>Ubicación: use el GPS o toque el punto exacto en el mapa (no necesita estar en el lugar)</label>
-            <button type="button" class="secundario" onclick="usarGps()">Usar mi ubicación (GPS)</button>
+            <button type="button" class="secundario" onclick="pagina.usarGps()">Usar mi ubicación (GPS)</button>
             <div id="mapaReporte" class="mapa"></div>
             <div class="fila">
                 <div><label for="latitud">Latitud</label><input id="latitud" type="number" step="any" required></div>
@@ -44,7 +44,7 @@
         <div class="fila">
             <div>
                 <label for="filtroEstado">Estado</label>
-                <select id="filtroEstado" onchange="cargarReportes()">
+                <select id="filtroEstado" onchange="pagina.cargarReportes()">
                     <option value="">Todos</option>
                     <option th:each="e : ${estados}" th:value="${e}" th:text="${e}">ESTADO</option>
                 </select>
@@ -72,13 +72,13 @@
         <div class="fila">
             <div>
                 <label for="filtroMaterial">Material</label>
-                <select id="filtroMaterial" onchange="cargarPuntos()">
+                <select id="filtroMaterial" onchange="pagina.cargarPuntos()">
                     <option value="">Todos</option>
                     <option th:each="m : ${materiales}" th:value="${m}" th:text="${m}">MATERIAL</option>
                 </select>
             </div>
-            <div><label for="filtroSector">Sector</label><select id="filtroSector" onchange="cargarPuntos()"></select></div>
-            <div style="flex:0"><button type="button" class="secundario" onclick="puntosCercanos()">Ordenar por cercanía</button></div>
+            <div><label for="filtroSector">Sector</label><select id="filtroSector" onchange="pagina.cargarPuntos()"></select></div>
+            <div style="flex:0"><button type="button" class="secundario" onclick="pagina.puntosCercanos()">Ordenar por cercanía</button></div>
         </div>
         <div id="msgPuntos" class="mensaje"></div>
         <div id="mapaPuntos" class="mapa"></div>
@@ -90,13 +90,13 @@
         <div class="fila">
             <div>
                 <label for="filtroCategoria">Categoría</label>
-                <select id="filtroCategoria" onchange="verContenidos()">
+                <select id="filtroCategoria" onchange="pagina.verContenidos()">
                     <option value="">Todas</option>
                     <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">CATEGORIA</option>
                 </select>
             </div>
             <div><label for="buscarContenido">Buscar por palabra</label><input id="buscarContenido" placeholder="Ej.: reciclaje"></div>
-            <div style="flex:0"><button type="button" onclick="verContenidos()">Buscar</button></div>
+            <div style="flex:0"><button type="button" onclick="pagina.verContenidos()">Buscar</button></div>
         </div>
         <div id="contenidos"></div>
     </section>

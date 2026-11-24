@@ -9,6 +9,7 @@ import com.ecogestion.excepcion.ReglaNegocioException;
 import com.ecogestion.model.Administrador;
 import com.ecogestion.model.Ciudadano;
 import com.ecogestion.model.Operador;
+import com.ecogestion.model.RegistroUsuarios;
 import com.ecogestion.model.Rol;
 import com.ecogestion.model.Usuario;
 import com.ecogestion.repository.AdministradorRepository;
@@ -32,8 +33,8 @@ import java.util.Optional;
  *   <li><b>Creador:</b> crea {@link Ciudadano}, {@link Operador} y {@link Administrador} porque recibe los
  *       datos de registro y es responsable de cifrar la contraseña antes de crearlos.</li>
  *   <li><b>Alta cohesión:</b> todo lo relacionado con cuentas está aquí y en ningún otro servicio.</li>
- *   <li><b>Polimorfismo:</b> trabaja con {@link Usuario} sin importar el tipo concreto; solo
- *       {@link #guardar} necesita saber en qué colección va cada tipo.</li>
+ *   <li><b>Polimorfismo:</b> trabaja con {@link Usuario} sin importar el tipo concreto; para guardar,
+ *       cada usuario elige su colección con {@code guardarEn} (despacho doble).</li>
  *   <li><b>Bajo acoplamiento:</b> usa la interfaz {@link PasswordEncoder}; no sabe que por debajo es BCrypt.</li>
  * </ul>
  */
@@ -196,15 +197,28 @@ public class UsuarioService {
         return horarioRutaService.consultarSector(sector).getNombre();
     }
 
-    /** Cada tipo de usuario vive en su propia colección, así que se guarda con su repositorio. */
+    /** Cada tipo de usuario vive en su propia colección: el propio usuario elige dónde guardarse. */
     private void guardar(Usuario usuario) {
-        switch (usuario) {
-            case Ciudadano c -> ciudadanoRepository.save(c);
-            case Operador o -> operadorRepository.save(o);
-            case Administrador a -> administradorRepository.save(a);
-            default -> throw new IllegalStateException("Tipo de usuario no soportado");
-        }
+        usuario.guardarEn(registro);
     }
+
+    /** Las tres colecciones de usuarios vistas como un solo {@link RegistroUsuarios}. */
+    private final RegistroUsuarios registro = new RegistroUsuarios() {
+        @Override
+        public void guardar(Ciudadano ciudadano) {
+            ciudadanoRepository.save(ciudadano);
+        }
+
+        @Override
+        public void guardar(Operador operador) {
+            operadorRepository.save(operador);
+        }
+
+        @Override
+        public void guardar(Administrador administrador) {
+            administradorRepository.save(administrador);
+        }
+    };
 
     private static String normalizar(String correo) {
         return correo == null ? "" : correo.trim().toLowerCase();

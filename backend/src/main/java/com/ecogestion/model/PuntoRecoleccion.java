@@ -51,13 +51,18 @@ public class PuntoRecoleccion {
         this.nombre = nuevoNombre.trim();
         this.direccion = nuevaDireccion;
         this.sector = nuevoSector;
-        this.ubicacion = new GeoJsonPoint(longitud, latitud);
+        this.ubicacion = new Coordenada(latitud, longitud).aGeoJson();
         this.materiales = EnumSet.copyOf(nuevosMateriales);
         this.horarioAtencion = nuevoHorario;
     }
 
     public boolean recibeMaterial(MaterialAceptado material) {
         return materiales.contains(material);
+    }
+
+    /** Distancia en metros hasta la ubicación del ciudadano, para ordenar por cercanía (HU-13). */
+    public double distanciaMetrosA(Coordenada desde) {
+        return desde.distanciaMetros(new Coordenada(getLatitud(), getLongitud()));
     }
 
     public void desactivar() {

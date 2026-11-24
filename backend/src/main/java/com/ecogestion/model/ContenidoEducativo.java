@@ -49,9 +49,12 @@ public class ContenidoEducativo {
         this.imagenUrl = nuevaImagen;
     }
 
+    /** Lo hace visible para los ciudadanos; si ya estaba publicado conserva su fecha de publicación. */
     public void publicar() {
-        this.publicado = true;
-        this.fechaPublicacion = LocalDateTime.now();
+        if (!publicado) {
+            this.publicado = true;
+            this.fechaPublicacion = LocalDateTime.now();
+        }
     }
 
     public void despublicar() {

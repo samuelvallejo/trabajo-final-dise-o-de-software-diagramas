@@ -33,6 +33,30 @@ public class Notificacion {
     protected Notificacion() {
     }
 
+    /**
+     * Crea el aviso del cambio de estado de {@code reporte} para el ciudadano de {@code destino}.
+     * {@code destino} es el mismo reporte o uno de sus duplicados (HU-06: los ciudadanos de los duplicados
+     * también reciben el aviso).
+     * <b>Creador / Experto en información:</b> la notificación sabe cómo se redacta a sí misma; el servicio
+     * solo le pasa los datos.
+     */
+    public static Notificacion porCambioDeEstado(Reporte reporte, Reporte destino, String correoDestino) {
+        EstadoReporte estado = reporte.getEstado();
+        StringBuilder mensaje = new StringBuilder()
+                .append("Hola ").append(destino.getCiudadano().getNombre()).append(",\n\n")
+                .append("Tu reporte ").append(destino.getId()).append(" (").append(destino.getDescripcion()).append(")")
+                .append(" cambió de estado a: ").append(estado.etiqueta()).append(".\n");
+        if (destino != reporte) {
+            mensaje.append("Tu reporte fue vinculado al reporte ").append(reporte.getId())
+                    .append(" porque corresponde al mismo problema.\n");
+        }
+        mensaje.append(reporte.resumenDeAtencion())
+                .append("\nGracias por ayudar a mantener limpia a Pasto.");
+        return new Notificacion(destino.getCiudadano().getId(), correoDestino,
+                "EcoGestión – Tu reporte " + destino.getId() + " está " + estado.etiqueta(),
+                mensaje.toString(), destino.getId(), estado);
+    }
+
     public Notificacion(String destinatarioId, String correoDestino, String asunto, String mensaje,
                         String reporteId, EstadoReporte estadoReporte) {
         this.destinatarioId = destinatarioId;

@@ -3,10 +3,10 @@ package com.ecogestion.service;
 import com.ecogestion.dto.RecoleccionDto.PuntoRequest;
 import com.ecogestion.dto.RecoleccionDto.PuntoResponse;
 import com.ecogestion.excepcion.RecursoNoEncontradoException;
+import com.ecogestion.model.Coordenada;
 import com.ecogestion.model.MaterialAceptado;
 import com.ecogestion.model.PuntoRecoleccion;
 import com.ecogestion.repository.PuntoRecoleccionRepository;
-import com.ecogestion.util.Geo;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
@@ -46,7 +46,8 @@ public class PuntoRecoleccionService {
                 .filter(p -> material == null || p.recibeMaterial(material))
                 .filter(p -> nombreSector == null || nombreSector.equalsIgnoreCase(p.getSector()));
         if (latitud != null && longitud != null) {
-            return puntos.map(p -> PuntoResponse.de(p, Geo.distanciaMetros(latitud, longitud, p.getLatitud(), p.getLongitud())))
+            Coordenada ciudadano = new Coordenada(latitud, longitud);
+            return puntos.map(p -> PuntoResponse.de(p, p.distanciaMetrosA(ciudadano)))
                     .sorted(Comparator.comparing(PuntoResponse::distanciaMetros))
                     .toList();
         }

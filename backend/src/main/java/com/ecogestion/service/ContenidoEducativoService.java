@@ -74,7 +74,7 @@ public class ContenidoEducativoService {
         usuarioService.validarRolAdministrador(rol);
         ContenidoEducativo contenido = buscar(id);
         contenido.actualizar(datos.titulo(), datos.categoria(), datos.cuerpo(), datos.imagenUrl());
-        if (datos.publicar() && !contenido.isPublicado()) {
+        if (datos.publicar()) {
             contenido.publicar();
         }
         return ContenidoResponse.de(contenidoRepository.save(contenido));

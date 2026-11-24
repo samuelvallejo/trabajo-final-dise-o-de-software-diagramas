@@ -81,14 +81,14 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
 | Componente | Servicio (`service`) | Controlador y rutas (`controller`) | Historias |
 |---|---|---|---|
 | Gestión de usuarios | `UsuarioService` | `AuthController` (`/api/auth/registro`, `/login`, `/logout`, `/yo`), `CiudadanoController` (`/api/ciudadanos/yo`, `/contrasena`, `/notificaciones`), `OperadorController` (`/api/admin/operadores`) | HU-01, HU-02, HU-07 |
-| Gestión de reportes | `ReporteService` | `ReporteController` (`POST/GET /api/reportes`, `GET /api/reportes/{id}`, `/posibles-duplicados`, `/duplicado`) | HU-03, HU-04, HU-06, HU-10 |
+| Gestión de reportes | `ReporteService` (implementa `CatalogoReportes`; qué ve cada usuario lo decide `Rol`) | `ReporteController` (`POST/GET /api/reportes`, `GET /api/reportes/{id}`, `/posibles-duplicados`, `/duplicado`) | HU-03, HU-04, HU-06, HU-10 |
 | Clasificación y priorización | `ClasificacionService` | `PUT /api/reportes/{id}/clasificacion`, `GET /api/clasificacion/tipos` | HU-05 |
 | Asignación y atención | `ReporteService.asignarReporte`, `AtencionService` | `PUT /api/reportes/{id}/asignacion`, `AtencionController` (`/api/operador/asignaciones`, `/{id}/inicio`, `/{id}/cierre`) | HU-07, HU-08, HU-09 |
 | Notificaciones | `NotificacionService` + `CanalNotificacion` (`CanalCorreo`, `CanalRegistro`) | `GET /api/ciudadanos/yo/notificaciones` | HU-11 |
 | Horarios y rutas | `HorarioRutaService` | `HorarioRutaController` (`/api/sectores`, `/api/horarios`, `/api/horarios/mi-sector`, `/api/admin/rutas`) | HU-12, HU-04 |
 | Puntos de recolección | `PuntoRecoleccionService` | `PuntoRecoleccionController` (`/api/puntos`, `/api/puntos/mi-sector`, `/api/admin/puntos`) | HU-13 |
 | Contenido educativo | `ContenidoEducativoService` | `ContenidoEducativoController` (`/api/contenidos`, `/api/admin/contenidos`) | HU-14 |
-| Estadísticas e informes | `EstadisticaService` | `EstadisticaController` (`/api/admin/estadisticas/panel`, `/informe`, `/informe.csv`) | HU-15 |
+| Estadísticas e informes | `EstadisticaService` + `EstadisticasReportes` (cálculo de indicadores) | `EstadisticaController` (`/api/admin/estadisticas/panel`, `/informe`, `/informe.csv`) | HU-15 |
 | Servicio de mapas/GPS (externo) | `ServicioMapas` (`OpenStreetMapServicioMapas`, `CoordenadasServicioMapas`) | — | HU-04 |
 | Almacenamiento de imágenes | `AlmacenamientoImagenes` (`GridFsAlmacenamientoImagenes`) | `GET /api/imagenes/{id}` | HU-03, HU-09 |
 | Interfaz web (vistas Thymeleaf + JS) | — | `PaginasController` (`/`, `/ciudadano`, `/administrador`, `/operador`) con `static/js/*.js` | HU-01 a HU-15 |

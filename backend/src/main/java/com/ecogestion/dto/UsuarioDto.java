@@ -1,6 +1,5 @@
 package com.ecogestion.dto;
 
-import com.ecogestion.model.Ciudadano;
 import com.ecogestion.model.Operador;
 import com.ecogestion.model.Rol;
 import com.ecogestion.model.Usuario;
@@ -57,9 +56,8 @@ public final class UsuarioDto {
 
     public record UsuarioResponse(String id, String nombre, String documento, String correo, Rol rol, String sector) {
         public static UsuarioResponse de(Usuario usuario) {
-            String sector = usuario instanceof Ciudadano c ? c.getSector() : null;
             return new UsuarioResponse(usuario.getId(), usuario.getNombre(), usuario.getDocumento(),
-                    usuario.getCorreo(), usuario.getRol(), sector);
+                    usuario.getCorreo(), usuario.getRol(), usuario.getSector());
         }
     }
 

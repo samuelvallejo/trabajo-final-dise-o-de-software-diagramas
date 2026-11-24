@@ -23,4 +23,9 @@ public class Administrador extends Usuario {
     public Rol getRol() {
         return Rol.ADMINISTRADOR;
     }
+
+    @Override
+    public void guardarEn(RegistroUsuarios registro) {
+        registro.guardar(this);
+    }
 }

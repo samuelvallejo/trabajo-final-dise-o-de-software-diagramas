@@ -102,7 +102,7 @@ public class Reporte {
         this.longitud = longitud;
         this.direccion = direccion;
         this.sector = sector;
-        this.ubicacion = new GeoJsonPoint(longitud, latitud); // GeoJSON usa el orden (longitud, latitud)
+        this.ubicacion = coordenada().aGeoJson();
     }
 
     /** Adjunta las URL de las fotos ya guardadas: entre 1 y 5. */
@@ -238,6 +238,32 @@ public class Reporte {
 
     public boolean estaAsignadoA(String operadorId) {
         return operador != null && Objects.equals(operador.getId(), operadorId);
+    }
+
+    /** Ubicación del reporte como objeto de valor (uso interno: distancias y punto GeoJSON). */
+    private Coordenada coordenada() {
+        return new Coordenada(latitud, longitud);
+    }
+
+    /** Distancia en metros hasta otro reporte (se muestra al revisar posibles duplicados, HU-06). */
+    public double distanciaMetrosA(Reporte otro) {
+        return coordenada().distanciaMetros(otro.coordenada());
+    }
+
+    /**
+     * Resumen de la atención para avisarle al ciudadano: el trabajo realizado si ya se resolvió, o el
+     * operador responsable si ya tiene uno (HU-11). <b>Experto:</b> el reporte conoce ambos datos.
+     */
+    public String resumenDeAtencion() {
+        if (estado == EstadoReporte.RESUELTO) {
+            return "Trabajo realizado: " + descripcionTrabajo + "\n";
+        }
+        return tieneOperador() ? "Operador responsable: " + operador.getNombre() + ".\n" : "";
+    }
+
+    /** Indica si el reporte ya tiene un operador responsable. */
+    private boolean tieneOperador() {
+        return operador != null;
     }
 
     /** Horas que pasaron entre la creación y la resolución (indicador de HU-15). */

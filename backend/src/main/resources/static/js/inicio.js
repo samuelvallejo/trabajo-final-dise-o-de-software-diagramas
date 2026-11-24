@@ -1,82 +1,77 @@
 /*
- * inicio.js — lógica de la página de inicio (index.html).
- * Usa las funciones comunes de api.js y mapas.js.
+ * inicio.js — página de inicio (index.html): iniciar sesión, registrarse y consultas públicas.
+ * Clase PaginaInicio, subclase de Pagina (api.js).
  */
+class PaginaInicio extends Pagina {
 
-let mapaPuntos, capaPuntos, mapaRutas, capaRutas;
-
-// ------------------------------------------------------------------ Iniciar sesión (HU-01)
-document.getElementById('formLogin').addEventListener('submit', async (evento) => {
-    evento.preventDefault(); // evita que el formulario recargue la página
-    const usuario = await conMensaje('msgLogin', () => Api.post('/api/auth/login', {
-        correo: document.getElementById('loginCorreo').value,
-        contrasena: document.getElementById('loginContrasena').value
-    }));
-    if (usuario) {
-        location.href = paginaDeRol(usuario.rol); // cada rol tiene su propia página
+    constructor() {
+        super(null); // página pública
     }
-});
 
-// ------------------------------------------------------------------ Registro de ciudadano (HU-01)
-document.getElementById('formRegistro').addEventListener('submit', async (evento) => {
-    evento.preventDefault();
-    const datos = {
-        nombre: document.getElementById('regNombre').value,
-        documento: document.getElementById('regDocumento').value,
-        correo: document.getElementById('regCorreo').value,
-        contrasena: document.getElementById('regContrasena').value,
-        sector: document.getElementById('regSector').value || null
-    };
-    const creado = await conMensaje('msgRegistro', () => Api.post('/api/auth/registro', datos),
-        'Cuenta creada. Ya puede iniciar sesión.');
-    if (creado) {
-        document.getElementById('formRegistro').reset();
-        document.getElementById('loginCorreo').value = datos.correo;
+    /** Si ya hay una sesión abierta, se va directo a la página del rol; si no, carga las consultas públicas. */
+    async cargar() {
+        const usuario = await Sesion.usuarioActual();
+        if (usuario) { location.href = Sesion.paginaDeRol(usuario.rol); return; }
+        this.mapaPuntos = new Mapa('mapaPuntos');
+        this.mapaRutas = new Mapa('mapaRutas');
+        this.$('formLogin').addEventListener('submit', e => { e.preventDefault(); this.iniciarSesion(); });
+        this.$('formRegistro').addEventListener('submit', e => { e.preventDefault(); this.registrarse(); });
+        await this.cargarSectores(['regSector'], 'Sin sector');
+        await Promise.all([this.verPuntos(), this.verContenidos()]);
     }
-});
 
-// ------------------------------------------------------------------ Horarios y rutas (HU-12)
-async function verHorarios() {
-    const busqueda = document.getElementById('buscarSector').value.trim();
-    if (!busqueda) return;
-    const contenedor = document.getElementById('horarios');
-    contenedor.innerHTML = '';
-    const resultado = await conMensaje('msgHorarios',
-        () => Api.get('/api/horarios?sector=' + encodeURIComponent(busqueda)), ' ');
-    if (resultado) {
-        contenedor.innerHTML = htmlHorarios(resultado);
-        dibujarRutas(mapaRutas, capaRutas, resultado.rutas);
+    // ------------------------------------------------------------------ HU-01: iniciar sesión y registrarse
+    async iniciarSesion() {
+        const usuario = await this.conMensaje('msgLogin', () => api.post('/api/auth/login', {
+            correo: this.$('loginCorreo').value,
+            contrasena: this.$('loginContrasena').value
+        }));
+        if (usuario) location.href = Sesion.paginaDeRol(usuario.rol); // cada rol tiene su propia página
+    }
+
+    async registrarse() {
+        const datos = {
+            nombre: this.$('regNombre').value,
+            documento: this.$('regDocumento').value,
+            correo: this.$('regCorreo').value,
+            contrasena: this.$('regContrasena').value,
+            sector: this.$('regSector').value || null
+        };
+        const creado = await this.conMensaje('msgRegistro', () => api.post('/api/auth/registro', datos),
+            'Cuenta creada. Ya puede iniciar sesión.');
+        if (creado) {
+            this.$('formRegistro').reset();
+            this.$('loginCorreo').value = datos.correo;
+        }
+    }
+
+    // ------------------------------------------------------------------ HU-12: horarios y rutas por sector o barrio
+    async verHorarios() {
+        const busqueda = this.$('buscarSector').value.trim();
+        if (!busqueda) return;
+        this.$('horarios').innerHTML = '';
+        const resultado = await this.conMensaje('msgHorarios',
+            () => api.get('/api/horarios?sector=' + encodeURIComponent(busqueda)), ' ');
+        if (resultado) {
+            this.$('horarios').innerHTML = Plantillas.horarios(resultado);
+            this.mapaRutas.mostrarRutas(resultado.rutas);
+        }
+    }
+
+    // ------------------------------------------------------------------ HU-13: puntos de recolección
+    async verPuntos() {
+        const material = this.$('filtroMaterial').value;
+        const puntos = await api.get('/api/puntos' + (material ? '?material=' + material : ''));
+        this.mapaPuntos.mostrarPuntos(puntos);
+        this.$('puntos').innerHTML = Plantillas.puntos(puntos);
+    }
+
+    // ------------------------------------------------------------------ HU-14: educación ambiental
+    async verContenidos() {
+        const contenidos = await api.contenidos(this.$('filtroCategoria').value, this.$('buscarContenido').value.trim());
+        this.$('contenidos').innerHTML = Plantillas.contenidos(contenidos);
     }
 }
 
-// ------------------------------------------------------------------ Puntos de recolección (HU-13)
-async function verPuntos() {
-    const material = document.getElementById('filtroMaterial').value;
-    const puntos = await Api.get('/api/puntos' + (material ? '?material=' + material : ''));
-    dibujarPuntos(mapaPuntos, capaPuntos, puntos);
-    document.getElementById('puntos').innerHTML = htmlPuntos(puntos);
-}
-
-// ------------------------------------------------------------------ Educación ambiental (HU-14)
-function verContenidos() {
-    return cargarContenidos('contenidos', document.getElementById('filtroCategoria').value,
-        document.getElementById('buscarContenido').value.trim());
-}
-
-// ------------------------------------------------------------------ Al cargar la página
-(async function iniciar() {
-    // Si ya hay una sesión abierta, se va directo a la página del rol
-    try {
-        const yo = await Api.get('/api/auth/yo');
-        location.href = paginaDeRol(yo.rol);
-        return;
-    } catch (e) {
-        // sin sesión: se queda en el inicio
-    }
-    mapaPuntos = crearMapa('mapaPuntos');
-    capaPuntos = L.featureGroup().addTo(mapaPuntos);
-    mapaRutas = crearMapa('mapaRutas');
-    capaRutas = L.featureGroup().addTo(mapaRutas);
-    await cargarSectores('regSector', 'Sin sector');
-    await Promise.all([verPuntos(), verContenidos()]);
-})();
+const pagina = new PaginaInicio();
+pagina.iniciar();

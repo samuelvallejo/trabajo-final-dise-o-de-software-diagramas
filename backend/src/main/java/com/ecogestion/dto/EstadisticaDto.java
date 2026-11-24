@@ -49,5 +49,29 @@ public final class EstadisticaDto {
             Double tiempoPromedioAtencionHoras,
             Map<TipoResiduo, Long> porTipoResiduo,
             Map<Prioridad, Long> porPrioridad,
-            List<ConteoSector> porSector) { }
+            List<ConteoSector> porSector) {
+
+        /**
+         * El informe se exporta a sí mismo como CSV separado por punto y coma (HU-15, criterio 4).
+         * <b>Experto en información:</b> el informe tiene todos los datos que van en el archivo.
+         */
+        public String aCsv() {
+            StringBuilder csv = new StringBuilder("indicador;valor\n");
+            fila(csv, "desde", desde);
+            fila(csv, "hasta", hasta);
+            fila(csv, "sector", sector == null || sector.isBlank() ? "Todos" : sector);
+            fila(csv, "total reportes", totalReportes);
+            fila(csv, "pendientes", pendientes);
+            fila(csv, "resueltos", resueltos);
+            fila(csv, "tiempo promedio de atención (horas)", tiempoPromedioAtencionHoras == null ? "" : tiempoPromedioAtencionHoras);
+            porTipoResiduo.forEach((tipo, n) -> fila(csv, "tipo " + tipo, n));
+            porPrioridad.forEach((p, n) -> fila(csv, "prioridad " + p, n));
+            porSector.forEach(s -> fila(csv, "sector " + s.sector(), s.reportes()));
+            return csv.toString();
+        }
+
+        private static void fila(StringBuilder csv, String indicador, Object valor) {
+            csv.append(indicador).append(';').append(valor).append('\n');
+        }
+    }
 }

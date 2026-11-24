@@ -52,7 +52,7 @@
         <h2>Horarios y rutas de recolección por sector o barrio</h2>
         <div class="fila">
             <div><label for="buscarSector">Sector o barrio</label><input id="buscarSector" placeholder="Ej.: Centro o Torobajo"></div>
-            <div style="flex:0"><button type="button" onclick="verHorarios()">Consultar</button></div>
+            <div style="flex:0"><button type="button" onclick="pagina.verHorarios()">Consultar</button></div>
         </div>
         <div id="msgHorarios" class="mensaje"></div>
         <div id="horarios"></div>
@@ -64,7 +64,7 @@
         <div class="fila">
             <div>
                 <label for="filtroMaterial">Material</label>
-                <select id="filtroMaterial" onchange="verPuntos()">
+                <select id="filtroMaterial" onchange="pagina.verPuntos()">
                     <option value="">Todos</option>
                     <option th:each="m : ${materiales}" th:value="${m}" th:text="${m}">MATERIAL</option>
                 </select>
@@ -79,13 +79,13 @@
         <div class="fila">
             <div>
                 <label for="filtroCategoria">Categoría</label>
-                <select id="filtroCategoria" onchange="verContenidos()">
+                <select id="filtroCategoria" onchange="pagina.verContenidos()">
                     <option value="">Todas</option>
                     <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">CATEGORIA</option>
                 </select>
             </div>
             <div><label for="buscarContenido">Buscar por palabra</label><input id="buscarContenido" placeholder="Ej.: pilas"></div>
-            <div style="flex:0"><button type="button" onclick="verContenidos()">Buscar</button></div>
+            <div style="flex:0"><button type="button" onclick="pagina.verContenidos()">Buscar</button></div>
         </div>
         <div id="contenidos"></div>
     </section>

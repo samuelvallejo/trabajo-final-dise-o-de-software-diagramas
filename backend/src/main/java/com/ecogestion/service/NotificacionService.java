@@ -4,7 +4,6 @@ import com.ecogestion.config.EcoGestionProperties;
 import com.ecogestion.dto.ContenidoDto.NotificacionResponse;
 import com.ecogestion.integracion.notificacion.CanalNotificacion;
 import com.ecogestion.integracion.notificacion.EnvioNotificacionException;
-import com.ecogestion.model.EstadoReporte;
 import com.ecogestion.model.Notificacion;
 import com.ecogestion.model.Reporte;
 import com.ecogestion.repository.NotificacionRepository;
@@ -26,8 +25,8 @@ import java.util.List;
  *
  * <p><b>Patrones GRASP:</b>
  * <ul>
- *   <li><b>Creador:</b> crea las {@link Notificacion} porque tiene todos los datos para armarlas
- *       (reporte, destinatario, asunto y mensaje).</li>
+ *   <li><b>Creador:</b> decide cuándo se crean las {@link Notificacion} y para quiénes (el ciudadano del
+ *       reporte y los de sus duplicados); la redacción la hace la propia notificación.</li>
  *   <li><b>Polimorfismo + Variaciones protegidas:</b> envía a través de la interfaz
  *       {@link CanalNotificacion}. Hoy hay un canal de correo y uno de registro; agregar SMS o push es crear
  *       otra clase que implemente la interfaz, sin tocar este servicio.</li>
@@ -56,8 +55,8 @@ public class NotificacionService {
 
     /** Servicio "Notificar cambio de estado" (lo usa Asignación y atención). Devuelve las notificaciones creadas. */
     public List<Notificacion> notificarCambioEstado(Reporte reporte) {
-        if (reporte.getEstado() == EstadoReporte.PENDIENTE) {
-            return List.of(); // pasar a Pendiente no genera aviso
+        if (!reporte.getEstado().seNotifica()) {
+            return List.of(); // el propio estado sabe si se avisa (volver a Pendiente no genera aviso)
         }
         // Destinatarios: el reporte original y todos sus duplicados
         List<Reporte> afectados = new ArrayList<>();
@@ -66,10 +65,8 @@ public class NotificacionService {
 
         List<Notificacion> creadas = new ArrayList<>();
         for (Reporte afectado : afectados) {
-            String ciudadanoId = afectado.getCiudadano().getId();
-            Notificacion notificacion = new Notificacion(ciudadanoId,
-                    usuarioService.obtenerCorreoDelCiudadano(ciudadanoId),
-                    asunto(reporte, afectado), mensaje(reporte, afectado), afectado.getId(), reporte.getEstado());
+            String correo = usuarioService.obtenerCorreoDelCiudadano(afectado.getCiudadano().getId());
+            Notificacion notificacion = Notificacion.porCambioDeEstado(reporte, afectado, correo);
             enviarConReintentos(notificacion);
             creadas.add(notificacionRepository.save(notificacion));
         }
@@ -97,35 +94,4 @@ public class NotificacionService {
         }
     }
 
-    private static String asunto(Reporte original, Reporte destino) {
-        return "EcoGestión – Tu reporte " + destino.getId() + " está " + texto(original.getEstado());
-    }
-
-    /** Arma el texto del aviso; agrega datos según el estado (operador asignado o trabajo realizado). */
-    private static String mensaje(Reporte original, Reporte destino) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("Hola ").append(destino.getCiudadano().getNombre()).append(",\n\n")
-                .append("Tu reporte ").append(destino.getId()).append(" (").append(destino.getDescripcion()).append(")")
-                .append(" cambió de estado a: ").append(texto(original.getEstado())).append(".\n");
-        if (destino != original) {
-            sb.append("Tu reporte fue vinculado al reporte ").append(original.getId())
-                    .append(" porque corresponde al mismo problema.\n");
-        }
-        if (original.getEstado() == EstadoReporte.ASIGNADO && original.getOperador() != null) {
-            sb.append("Operador responsable: ").append(original.getOperador().getNombre()).append(".\n");
-        }
-        if (original.getEstado() == EstadoReporte.RESUELTO) {
-            sb.append("Trabajo realizado: ").append(original.getDescripcionTrabajo()).append("\n");
-        }
-        return sb.append("\nGracias por ayudar a mantener limpia a Pasto.").toString();
-    }
-
-    private static String texto(EstadoReporte estado) {
-        return switch (estado) {
-            case PENDIENTE -> "Pendiente";
-            case ASIGNADO -> "Asignado";
-            case EN_PROCESO -> "En proceso";
-            case RESUELTO -> "Resuelto";
-        };
-    }
 }

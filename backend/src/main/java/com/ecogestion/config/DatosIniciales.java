@@ -2,6 +2,7 @@ package com.ecogestion.config;
 
 import com.ecogestion.model.CategoriaContenido;
 import com.ecogestion.model.ContenidoEducativo;
+import com.ecogestion.model.Coordenada;
 import com.ecogestion.model.HorarioRecoleccion;
 import com.ecogestion.model.MaterialAceptado;
 import com.ecogestion.model.PuntoRecoleccion;
@@ -86,7 +87,7 @@ public class DatosIniciales implements ApplicationRunner {
         rutaRepository.saveAll(List.of(
                 new RutaRecoleccion("Ruta 1 – Centro", List.of("Centro"),
                         List.of(horario(DayOfWeek.MONDAY, 19, 23), horario(DayOfWeek.WEDNESDAY, 19, 23), horario(DayOfWeek.FRIDAY, 19, 23)),
-                        List.of(new RutaRecoleccion.Coordenada(1.2136, -77.2811), new RutaRecoleccion.Coordenada(1.2150, -77.2780))),
+                        List.of(new Coordenada(1.2136, -77.2811), new Coordenada(1.2150, -77.2780))),
                 new RutaRecoleccion("Ruta 2 – Norte y Oriente", List.of("Norte", "Oriente"),
                         List.of(horario(DayOfWeek.TUESDAY, 6, 12), horario(DayOfWeek.THURSDAY, 6, 12), horario(DayOfWeek.SATURDAY, 6, 10)),
                         List.of()),

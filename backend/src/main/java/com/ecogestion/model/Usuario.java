@@ -19,8 +19,9 @@ import java.time.LocalDateTime;
  *
  * <p><b>Patrones GRASP:</b>
  * <ul>
- *   <li><b>Polimorfismo:</b> cada subclase responde {@link #getRol()} a su manera. Spring Security y los
- *       servicios trabajan con "un Usuario" sin preguntar con if/else de qué tipo es.</li>
+ *   <li><b>Polimorfismo:</b> cada subclase responde {@link #getRol()}, {@link #guardarEn} y
+ *       {@link #getSector()} a su manera. Spring Security y los servicios trabajan con "un Usuario" sin
+ *       preguntar con if/else, switch o instanceof de qué tipo es.</li>
  *   <li><b>Experto en información:</b> el usuario conoce su contraseña cifrada, sus intentos fallidos y su
  *       fecha de bloqueo, por eso es él quien verifica la contraseña, decide si está bloqueado y cuenta
  *       los intentos. Ningún servicio necesita leer esos datos para decidir.</li>
@@ -50,6 +51,17 @@ public abstract class Usuario {
 
     /** Rol con el que la cuenta actúa en el sistema. Cada subclase devuelve el suyo. */
     public abstract Rol getRol();
+
+    /**
+     * Se guarda en la colección que le corresponde. Cada subclase llama al método {@code guardar} de su
+     * tipo (despacho doble), así quien guarda no necesita preguntar qué clase de usuario es.
+     */
+    public abstract void guardarEn(RegistroUsuarios registro);
+
+    /** Sector de residencia; solo el ciudadano tiene uno (lo sobrescribe {@link Ciudadano}). */
+    public String getSector() {
+        return null;
+    }
 
     // ============================================================ Contraseña (HU-01, HU-02)
 

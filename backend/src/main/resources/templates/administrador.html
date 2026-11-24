@@ -59,7 +59,7 @@
                 </select>
             </div>
             <div><label for="fSector">Sector</label><select id="fSector"></select></div>
-            <div style="flex:0"><button type="button" onclick="cargarBandeja()">Filtrar</button></div>
+            <div style="flex:0"><button type="button" onclick="pagina.cargarBandeja()">Filtrar</button></div>
         </div>
         <div id="bandeja"></div>
     </section>
@@ -79,13 +79,13 @@
                         <option th:each="p : ${prioridades}" th:value="${p}" th:text="${p}">PRIORIDAD</option>
                     </select>
                 </div>
-                <button type="button" onclick="clasificar()">Guardar clasificación</button>
+                <button type="button" onclick="pagina.clasificar()">Guardar clasificación</button>
             </div>
             <div>
                 <h3>Asignar a un operador (HU-07)</h3>
                 <select id="operadorAsignar"></select>
                 <label><input id="reasignar" type="checkbox" style="width:auto"> Reasignar (cambiar el operador actual)</label>
-                <button type="button" onclick="asignar()">Asignar</button>
+                <button type="button" onclick="pagina.asignar()">Asignar</button>
             </div>
         </div>
         <h3>Posibles duplicados a menos de 50 m (HU-06)</h3>
@@ -116,8 +116,8 @@
                 <div><label for="hasta">Hasta</label><input id="hasta" type="date"></div>
             </div>
             <label for="iSector">Sector</label><select id="iSector"></select>
-            <button type="button" onclick="generarInforme()">Generar</button>
-            <button type="button" class="secundario" onclick="descargarCsv()">Exportar CSV</button>
+            <button type="button" onclick="pagina.generarInforme()">Generar</button>
+            <button type="button" class="secundario" onclick="pagina.descargarCsv()">Exportar CSV</button>
             <div id="msgInforme" class="mensaje"></div>
             <div id="informe"></div>
         </section>
@@ -133,10 +133,10 @@
             <select id="rSectores" multiple required></select>
             <label>Horarios</label>
             <div id="filasHorario"></div>
-            <button type="button" class="secundario" onclick="agregarFilaHorario()">+ Agregar horario</button>
+            <button type="button" class="secundario" onclick="pagina.agregarFilaHorario()">+ Agregar horario</button>
             <div>
                 <button type="submit">Guardar ruta</button>
-                <button type="button" class="secundario" onclick="limpiarRuta()">Cancelar</button>
+                <button type="button" class="secundario" onclick="pagina.limpiarRuta()">Cancelar</button>
             </div>
         </form>
         <div id="msgRuta" class="mensaje"></div>
@@ -162,7 +162,7 @@
                 </select>
                 <label for="pHorario">Horario de atención</label><input id="pHorario" required placeholder="Lunes a viernes 8:00–17:00">
                 <button type="submit">Guardar punto</button>
-                <button type="button" class="secundario" onclick="limpiarPunto()">Cancelar</button>
+                <button type="button" class="secundario" onclick="pagina.limpiarPunto()">Cancelar</button>
             </form>
             <div id="msgPunto" class="mensaje"></div>
         </section>
@@ -181,7 +181,7 @@
                 <label for="cImagen">URL de imagen (opcional)</label><input id="cImagen" type="url">
                 <label><input id="cPublicar" type="checkbox" style="width:auto" checked> Publicar</label>
                 <button type="submit">Guardar contenido</button>
-                <button type="button" class="secundario" onclick="limpiarContenido()">Cancelar</button>
+                <button type="button" class="secundario" onclick="pagina.limpiarContenido()">Cancelar</button>
             </form>
             <div id="msgContenido" class="mensaje"></div>
         </section>

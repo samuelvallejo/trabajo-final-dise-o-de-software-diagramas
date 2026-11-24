@@ -1,5 +1,6 @@
 package com.ecogestion.model;
 
+import com.ecogestion.excepcion.ReglaNegocioException;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
@@ -30,6 +31,18 @@ public class Operador extends Usuario {
     @Override
     public Rol getRol() {
         return Rol.OPERADOR;
+    }
+
+    @Override
+    public void guardarEn(RegistroUsuarios registro) {
+        registro.guardar(this);
+    }
+
+    /** Falla si el operador está ocupado: solo se asignan reportes a operadores disponibles (HU-07). */
+    public void verificarDisponible() {
+        if (!disponible) {
+            throw new ReglaNegocioException("El operador " + nombre + " no está disponible");
+        }
     }
 
     /** El operador deja de recibir asignaciones nuevas (por ejemplo, está de vacaciones). */

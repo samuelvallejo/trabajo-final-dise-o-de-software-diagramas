@@ -1,5 +1,6 @@
 package com.ecogestion.dto;
 
+import com.ecogestion.model.Coordenada;
 import com.ecogestion.model.HorarioRecoleccion;
 import com.ecogestion.model.MaterialAceptado;
 import com.ecogestion.model.PuntoRecoleccion;
@@ -51,10 +52,10 @@ public final class RecoleccionDto {
             @NotBlank String nombre,
             @NotEmpty List<String> sectores,
             @NotEmpty List<@Valid HorarioRequest> horarios,
-            List<RutaRecoleccion.Coordenada> recorrido) { }
+            List<Coordenada> recorrido) { }
 
     public record RutaResponse(String id, String nombre, List<String> sectores, List<HorarioRecoleccion> horarios,
-                               List<RutaRecoleccion.Coordenada> recorrido) {
+                               List<Coordenada> recorrido) {
         public static RutaResponse de(RutaRecoleccion r) {
             return new RutaResponse(r.getId(), r.getNombre(), r.getSectores(), r.getHorarios(), r.getRecorrido());
         }

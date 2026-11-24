@@ -71,6 +71,4 @@ public class RutaRecoleccion {
     public List<HorarioRecoleccion> getHorarios() { return Collections.unmodifiableList(horarios); }
     public List<Coordenada> getRecorrido() { return Collections.unmodifiableList(recorrido); }
 
-    /** Punto del recorrido de la ruta. */
-    public record Coordenada(double latitud, double longitud) { }
 }
