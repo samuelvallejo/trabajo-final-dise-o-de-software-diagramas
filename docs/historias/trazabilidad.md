@@ -10,17 +10,17 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
 | Registro e inicio de sesión con nombre, documento, correo y contraseña | HU-01 | Gestión de usuarios | `Ciudadano` (nombre, documento, correo, contrasenaHash) | Navegador → Servidor web/API (HTTPS); MongoDB |
 | Consultar y actualizar datos personales | HU-02 | Gestión de usuarios | `Ciudadano` (correo, sector, getters/setters) | MongoDB |
 | Reportar acumulación o residuos abandonados con descripción, tipo y fotos | HU-03 | Gestión de reportes (requiere *Validar ciudadano*) | `Reporte` (descripcion, tipoResiduo, fotos); `GestorReportes.registrarReporte`; `ReporteController/Service.registrarReporte` | Fotos en MongoDB GridFS; URL en el `Reporte` |
-| Ubicación por GPS o seleccionando un punto en el mapa | HU-04 | Gestión de reportes (requiere *Servicio de mapas/GPS* e *Identificar sector*) | `Reporte` (latitud, longitud, direccion, sector) | Sensor GPS del smartphone; Maps JavaScript API + Geocoding API |
+| Ubicación por GPS o seleccionando un punto en el mapa | HU-04 | Gestión de reportes (requiere *Servicio de mapas/GPS* e *Identificar sector*) | `Reporte` (latitud, longitud, direccion, sector) | Sensor GPS del smartphone; mapa de OpenStreetMap (Leaflet) + geocodificación con Nominatim |
 | Clasificación por tipo de problema y prioridad de atención | HU-05 | Clasificación y priorización (*Clasificar y priorizar*) | `Reporte` (tipoResiduo, prioridad); `ReporteRepository.findByEstado` (bandeja de pendientes) | — |
 | Revisar reportes y detectar duplicados | HU-06 | Gestión de reportes | `Reporte.reporteOriginal`, asociación `duplicadoDe`, `marcarComoDuplicado` | Índice 2dsphere de MongoDB |
 | Asignar a un operador sin que varios equipos atiendan lo mismo | HU-07 | Asignación y atención (requiere *Consultar operadores* y *Consultar y actualizar estado del reporte*) | `Reporte.operador [0..1]`, `Reporte.version`, `Operador.disponible`; `ReporteService.asignarReporte / validarDisponibilidad` | — |
-| El operador consulta sus reportes asignados y su ubicación | HU-08 | Asignación y atención | asociación `atiende` (Operador 0..1 — 0..* Reporte) | Smartphone del operador; mapa con Maps JavaScript API |
+| El operador consulta sus reportes asignados y su ubicación | HU-08 | Asignación y atención | asociación `atiende` (Operador 0..1 — 0..* Reporte) | Smartphone del operador; mapa de OpenStreetMap (Leaflet) con color por prioridad |
 | Actualizar estado (pendiente → asignado → en proceso → resuelto) | HU-09 | Asignación y atención | `Reporte.estado`, `cambiarEstado` | — |
 | Registrar el trabajo realizado y fotos de evidencia al terminar | HU-09 | Asignación y atención | `Reporte` (descripcionTrabajo, fotosEvidencia, fechaResolucion), `registrarCierre` | Fotos en MongoDB GridFS |
 | El ciudadano consulta el historial y el estado de sus reportes | HU-10 | Gestión de reportes | asociación `historial` (Ciudadano 1 — 0..* Reporte); `listarReportes / obtenerReporte` | — |
 | Notificaciones al asignar, empezar a atender o resolver (correo, extensible) | HU-11 | Notificaciones (provee *Notificar cambio de estado*; requiere *Obtener correo del ciudadano* y la interfaz externa *Canal de notificación*) | — | Servicio de correo electrónico (SMTP/TLS:587) |
 | Horarios y rutas de recolección por barrio/sector, actualizados por el administrador | HU-12 | Horarios y rutas | `Ciudadano.sector` | — |
-| Puntos de recolección autorizados en un mapa (materiales y horario) | HU-13 | Puntos de recolección (requiere *Consultar sector*) | — | Mapa con Maps JavaScript API |
+| Puntos de recolección autorizados en un mapa (materiales y horario) | HU-13 | Puntos de recolección (requiere *Consultar sector*) | — | Mapa de OpenStreetMap (Leaflet) |
 | Contenido de educación ambiental publicado por el administrador | HU-14 | Contenido educativo (requiere *Validar rol de administrador*) | — | — |
 | Panel administrativo (totales, problemas frecuentes, pendientes/resueltos, sectores) | HU-15 | Estadísticas e informes (requiere *Consultar reportes* y *Consultar tipos y prioridades*) | `Reporte` (estado, tipoResiduo, sector) | — |
 | Estadísticas e informes para evaluar la atención y planificar limpiezas | HU-15 | Estadísticas e informes | `Reporte` (fechaReporte, fechaResolucion) | — |
@@ -62,9 +62,9 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
   la asignación se modela con el atributo `Reporte.operador [0..1]` y no con una clase aparte: un reporte nunca
   tiene dos operadores, y el campo `version` del documento MongoDB impide que dos administradores lo asignen a la vez.
 - Los estados del reporte son Pendiente → Asignado → En proceso → Resuelto (`Reporte.estado`).
-- Los mapas de las pantallas (HU-08, HU-12, HU-13, HU-15) se dibujan en el navegador con Maps JavaScript API
-  (vista de despliegue). Solo Gestión de reportes llama al servicio de mapas desde el servidor, para la
-  geocodificación (HU-04).
+- Los mapas de las pantallas (HU-08, HU-12, HU-13, HU-15) se dibujan en el navegador con Leaflet y las teselas
+  de OpenStreetMap, que no necesitan clave (vista de despliegue). Solo Gestión de reportes llama al servicio de mapas desde el servidor, para la
+  geocodificación con Nominatim (HU-04).
 - Las historias no piden notificaciones dentro de la aplicación. Por eso la vista de contexto solo muestra
   notificaciones por correo electrónico.
 - Los tipos del reporte son enumeraciones: `TipoResiduo`, `Prioridad` y `EstadoReporte`; las fechas son `LocalDateTime`.
@@ -72,7 +72,7 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
   (nombre, documento, correo, contraseña cifrada con BCrypt y bloqueo tras 5 intentos fallidos).
   El papel de `GestorReportes` del modelo inicial lo cumple `ReporteService`, usado por el administrador.
 - Las fotos de los reportes y de las evidencias se guardan en MongoDB GridFS dentro de la misma base de datos
-  desplegada en Railway, para no depender de servicios distintos a Spring Boot y MongoDB.
+  (MongoDB Atlas), para no depender de servicios distintos a Spring Boot y MongoDB.
 - Si no se configura un servidor SMTP, las notificaciones se guardan igual en el historial y se escriben en el
   registro de la aplicación (`CanalRegistro`); con SMTP se envían por correo (`CanalCorreo`).
 
@@ -89,6 +89,6 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
 | Puntos de recolección | `PuntoRecoleccionService` | `PuntoRecoleccionController` (`/api/puntos`, `/api/puntos/mi-sector`, `/api/admin/puntos`) | HU-13 |
 | Contenido educativo | `ContenidoEducativoService` | `ContenidoEducativoController` (`/api/contenidos`, `/api/admin/contenidos`) | HU-14 |
 | Estadísticas e informes | `EstadisticaService` | `EstadisticaController` (`/api/admin/estadisticas/panel`, `/informe`, `/informe.csv`) | HU-15 |
-| Servicio de mapas/GPS (externo) | `ServicioMapas` (`GoogleGeocodingServicioMapas`, `CoordenadasServicioMapas`) | — | HU-04 |
+| Servicio de mapas/GPS (externo) | `ServicioMapas` (`OpenStreetMapServicioMapas`, `CoordenadasServicioMapas`) | — | HU-04 |
 | Almacenamiento de imágenes | `AlmacenamientoImagenes` (`GridFsAlmacenamientoImagenes`) | `GET /api/imagenes/{id}` | HU-03, HU-09 |
 | Interfaz web (vistas Thymeleaf + JS) | — | `PaginasController` (`/`, `/ciudadano`, `/administrador`, `/operador`) con `static/js/*.js` | HU-01 a HU-15 |

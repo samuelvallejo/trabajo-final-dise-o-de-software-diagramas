@@ -1,11 +1,12 @@
 <!DOCTYPE html>
 <!--
   Página del administrador (requiere sesión con rol ADMINISTRADOR).
-  - Panel con indicadores. HU-15
+  - Panel con indicadores y mapa de calor de los sectores con más reportes. HU-15
   - Bandeja de reportes: clasificar, revisar duplicados y asignar a un operador. HU-05, HU-06, HU-07
   - Operadores de limpieza: crear y marcar disponibles u ocupados. HU-07
   - Informe por periodo con descarga en CSV. HU-15
-  - Contenido educativo y puntos de recolección. HU-14, HU-13
+  - Rutas y horarios de recolección. HU-12
+  - Puntos de recolección (crear, editar, desactivar) y contenido educativo (crear, editar, publicar). HU-13, HU-14
   La lógica está en /js/administrador.js.
 -->
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
@@ -17,10 +18,19 @@
     <section>
         <h2>Panel</h2>
         <div id="panel" class="indicadores"></div>
-        <h3>Problemas más frecuentes</h3>
-        <div id="frecuentes" class="ayuda"></div>
-        <h3>Sectores con más reportes</h3>
-        <div id="sectores" class="ayuda"></div>
+        <div class="columnas">
+            <div>
+                <h3>Problemas más frecuentes</h3>
+                <div id="frecuentes" class="ayuda"></div>
+                <h3>Sectores con más reportes</h3>
+                <div id="sectores"></div>
+            </div>
+            <div>
+                <h3>Mapa de calor por sector</h3>
+                <div id="mapaCalor" class="mapa pequeno"></div>
+                <div class="leyenda">El tamaño y la intensidad del círculo indican cuántos reportes tiene el sector.</div>
+            </div>
+        </div>
     </section>
 
     <section>
@@ -107,37 +117,41 @@
             </div>
             <label for="iSector">Sector</label><select id="iSector"></select>
             <button type="button" onclick="generarInforme()">Generar</button>
-            <button type="button" class="secundario" onclick="descargarCsv()">Descargar CSV</button>
+            <button type="button" class="secundario" onclick="descargarCsv()">Exportar CSV</button>
             <div id="msgInforme" class="mensaje"></div>
             <div id="informe"></div>
         </section>
     </div>
 
-    <div class="columnas">
-        <section>
-            <h2>Contenido educativo</h2>
-            <div id="contenidos"></div>
-            <h3>Nuevo contenido</h3>
-            <form id="formContenido">
-                <label for="cTitulo">Título</label><input id="cTitulo" required>
-                <label for="cCategoria">Categoría</label>
-                <select id="cCategoria">
-                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">CATEGORIA</option>
-                </select>
-                <label for="cCuerpo">Texto</label><textarea id="cCuerpo" required></textarea>
-                <label><input id="cPublicar" type="checkbox" style="width:auto" checked> Publicar de inmediato</label>
-                <button type="submit">Guardar contenido</button>
-            </form>
-            <div id="msgContenido" class="mensaje"></div>
-        </section>
+    <section>
+        <h2>Rutas y horarios de recolección</h2>
+        <div id="rutas"></div>
+        <h3 id="tituloRuta">Nueva ruta</h3>
+        <form id="formRuta">
+            <label for="rNombre">Nombre</label><input id="rNombre" required>
+            <label for="rSectores">Sectores que cubre (Ctrl + clic para elegir varios)</label>
+            <select id="rSectores" multiple required></select>
+            <label>Horarios</label>
+            <div id="filasHorario"></div>
+            <button type="button" class="secundario" onclick="agregarFilaHorario()">+ Agregar horario</button>
+            <div>
+                <button type="submit">Guardar ruta</button>
+                <button type="button" class="secundario" onclick="limpiarRuta()">Cancelar</button>
+            </div>
+        </form>
+        <div id="msgRuta" class="mensaje"></div>
+    </section>
 
+    <div class="columnas">
         <section>
             <h2>Puntos de recolección</h2>
             <div id="puntosAdmin"></div>
-            <h3>Nuevo punto</h3>
+            <h3 id="tituloPunto">Nuevo punto</h3>
             <form id="formPunto">
                 <label for="pNombre">Nombre</label><input id="pNombre" required>
                 <label for="pDireccion">Dirección</label><input id="pDireccion" required>
+                <label>Ubicación: toque el punto en el mapa</label>
+                <div id="mapaPunto" class="mapa pequeno"></div>
                 <div class="fila">
                     <div><label for="pLatitud">Latitud</label><input id="pLatitud" type="number" step="any" required></div>
                     <div><label for="pLongitud">Longitud</label><input id="pLongitud" type="number" step="any" required></div>
@@ -147,9 +161,29 @@
                     <option th:each="m : ${materiales}" th:value="${m}" th:text="${m}">MATERIAL</option>
                 </select>
                 <label for="pHorario">Horario de atención</label><input id="pHorario" required placeholder="Lunes a viernes 8:00–17:00">
-                <button type="submit">Crear punto</button>
+                <button type="submit">Guardar punto</button>
+                <button type="button" class="secundario" onclick="limpiarPunto()">Cancelar</button>
             </form>
             <div id="msgPunto" class="mensaje"></div>
+        </section>
+
+        <section>
+            <h2>Contenido educativo</h2>
+            <div id="contenidosAdmin"></div>
+            <h3 id="tituloContenido">Nuevo contenido</h3>
+            <form id="formContenido">
+                <label for="cTitulo">Título</label><input id="cTitulo" required>
+                <label for="cCategoria">Categoría</label>
+                <select id="cCategoria">
+                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">CATEGORIA</option>
+                </select>
+                <label for="cCuerpo">Texto</label><textarea id="cCuerpo" required></textarea>
+                <label for="cImagen">URL de imagen (opcional)</label><input id="cImagen" type="url">
+                <label><input id="cPublicar" type="checkbox" style="width:auto" checked> Publicar</label>
+                <button type="submit">Guardar contenido</button>
+                <button type="button" class="secundario" onclick="limpiarContenido()">Cancelar</button>
+            </form>
+            <div id="msgContenido" class="mensaje"></div>
         </section>
     </div>
 </main>

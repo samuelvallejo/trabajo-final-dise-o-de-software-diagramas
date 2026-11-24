@@ -5,7 +5,7 @@ import java.util.Optional;
 
 /**
  * Implementación sin proveedor externo: usa las coordenadas como dirección aproximada.
- * Se usa cuando no hay clave de Google Maps, para que el sistema funcione igual.
+ * Se usa con MAPAS_GEOCODIFICACION=coordenadas, por ejemplo para trabajar sin conexión a internet.
  *
  * <p><b>Patrones GRASP:</b>
  * <ul>

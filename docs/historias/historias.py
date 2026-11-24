@@ -96,7 +96,7 @@ HISTORIAS = [
         "justificacion": "Sin ubicación precisa el operador no puede llegar al sitio ni se pueden identificar zonas afectadas.",
         "notas": [
             "La ubicación se guarda en los atributos latitud, longitud, direccion y sector del Reporte.",
-            "El mapa se muestra en la vista web con Maps JavaScript API; Gestión de reportes obtiene la dirección con la Geocoding API (Servicio de mapas/GPS) y el sector lo identifica Horarios y rutas (\"Identificar sector\").",
+            "El mapa se muestra en la vista web con Leaflet y OpenStreetMap; Gestión de reportes obtiene la dirección con Nominatim (geocodificación de OpenStreetMap) (Servicio de mapas/GPS) y el sector lo identifica Horarios y rutas (\"Identificar sector\").",
         ],
     },
     {
@@ -159,14 +159,14 @@ HISTORIAS = [
     {
         "id": "08", "titulo": "Consultar mis reportes asignados y su ubicación",
         "rol": "operador", "prioridad": "Alta", "puntos": 3,
-        "modulos": ["asignacion", "mapas"], "componente": "Asignación y atención (el mapa se muestra en la vista web con Maps JavaScript API)",
+        "modulos": ["asignacion", "mapas"], "componente": "Asignación y atención (el mapa se muestra en la vista web con Leaflet y OpenStreetMap)",
         "historia": ("Como **operador de limpieza**, quiero ver los reportes que tengo asignados con su "
                      "ubicación en el mapa, para planificar mi recorrido y llegar al lugar."),
         "criterios": [
             "**Dado** que inicié sesión como operador, **cuando** abro \"Mis asignaciones\", **entonces** veo solo los reportes asignados a mí que no están resueltos.",
             "**Dado** la lista de asignaciones, **cuando** cambio a vista de mapa, **entonces** cada reporte aparece como un marcador con color según su prioridad.",
             "**Dado** un reporte asignado, **cuando** abro su detalle, **entonces** veo descripción, tipo de residuo, prioridad, fotos, dirección y la opción \"Cómo llegar\".",
-            "**Dado** que tengo varias asignaciones, **cuando** ordeno la lista, **entonces** puedo ordenarla por prioridad o por fecha de asignación.",
+            "**Dado** que tengo varias asignaciones, **cuando** ordeno la lista, **entonces** puedo ordenarla por prioridad o por fecha del reporte (los más antiguos primero).",
         ],
         "justificacion": "Sin esta vista el operador no sabe qué atender ni dónde.",
         "notas": [
@@ -243,13 +243,13 @@ HISTORIAS = [
         ],
         "justificacion": "Ataca la causa del problema (desconocimiento de horarios), pero no es parte del flujo de reportes.",
         "notas": [
-            "Un sector agrupa varios barrios; una ruta puede cubrir varios sectores. La ruta se dibuja en la vista web con Maps JavaScript API.",
+            "Un sector agrupa varios barrios; una ruta puede cubrir varios sectores. La ruta se dibuja en la vista web con Leaflet y OpenStreetMap.",
         ],
     },
     {
         "id": "13", "titulo": "Consultar en el mapa los puntos de recolección autorizados",
         "rol": "ciudadano", "extra_roles": ["administrador"], "prioridad": "Media", "puntos": 5,
-        "modulos": ["puntos-recoleccion", "mapas"], "componente": "Puntos de recolección (consulta el sector a Horarios y rutas; mapa con Maps JavaScript API)",
+        "modulos": ["puntos-recoleccion", "mapas"], "componente": "Puntos de recolección (consulta el sector a Horarios y rutas; mapa con Leaflet y OpenStreetMap)",
         "historia": ("Como **ciudadano**, quiero ver en un mapa los puntos de recolección autorizados con "
                      "los materiales que reciben y su horario, para llevar allí residuos especiales como "
                      "electrónicos, pilas o reciclables."),

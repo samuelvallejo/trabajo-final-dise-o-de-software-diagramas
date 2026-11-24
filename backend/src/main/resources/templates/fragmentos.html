@@ -2,7 +2,8 @@
 <!--
   Fragmentos reutilizables (Thymeleaf). Cada página los incluye con th:replace para no repetir
   el <head> ni la barra superior:
-    - cabeza(titulo): metadatos, hoja de estilos y el módulo común api.js
+    - cabeza(titulo): metadatos, hojas de estilo, Leaflet (mapas de OpenStreetMap) y los módulos
+      comunes api.js y mapas.js
     - barra(rol): barra superior con el nombre del usuario y el botón "Cerrar sesión"
 -->
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
@@ -11,8 +12,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${titulo} + ' · EcoGestión'">EcoGestión</title>
+    <!-- Leaflet 1.9.4 desde su CDN oficial (con verificación de integridad) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <link rel="stylesheet" th:href="@{/css/estilos.css}">
     <script th:src="@{/js/api.js}"></script>
+    <script th:src="@{/js/mapas.js}"></script>
 </head>
 
 <body>

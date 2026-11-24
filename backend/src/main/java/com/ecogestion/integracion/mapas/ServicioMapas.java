@@ -9,7 +9,7 @@ import java.util.Optional;
  * <p><b>Patrones GRASP:</b>
  * <ul>
  *   <li><b>Variaciones protegidas:</b> protege al sistema de los cambios del proveedor de mapas.</li>
- *   <li><b>Polimorfismo:</b> hay dos implementaciones (Google y solo coordenadas) y {@code ReporteService}
+ *   <li><b>Polimorfismo:</b> hay dos implementaciones (OpenStreetMap y solo coordenadas) y {@code ReporteService}
  *       no sabe cuál está usando.</li>
  * </ul>
  */

@@ -129,11 +129,6 @@ function galeria(urls) {
         '<a href="' + escapar(u) + '" target="_blank"><img src="' + escapar(u) + '" alt="foto"></a>').join('') + '</div>';
 }
 
-/** Enlace para ver una coordenada en Google Maps (abre en otra pestaña). */
-function enlaceMapa(latitud, longitud) {
-    return '<a href="https://www.google.com/maps?q=' + latitud + ',' + longitud + '" target="_blank">Ver en el mapa</a>';
-}
-
 /** Llena una lista desplegable con los sectores (se usa en registro, perfil y filtros). */
 async function cargarSectores(idSelect, textoVacio) {
     const select = document.getElementById(idSelect);
@@ -165,6 +160,32 @@ function htmlPuntos(puntos) {
     return '<div class="tabla"><table><tr><th>Punto</th><th>Dirección</th><th>Sector</th><th>Materiales</th><th>Horario</th><th></th></tr>' +
         puntos.map(p => '<tr><td>' + escapar(p.nombre) + '</td><td>' + escapar(p.direccion) + '</td><td>' +
             escapar(p.sector) + '</td><td>' + escapar(p.materiales.join(', ')) + '</td><td>' +
-            escapar(p.horarioAtencion) + '</td><td>' + enlaceMapa(p.latitud, p.longitud) + '</td></tr>').join('') +
+            escapar(p.horarioAtencion) + '</td><td>' + enlaceComoLlegar(p.latitud, p.longitud) + '</td></tr>').join('') +
         '</table></div>';
 }
+
+/**
+ * Contenidos educativos agrupados por categoría (HU-14). Se usa en el inicio y en la página del ciudadano.
+ * El filtro por categoría y la búsqueda por palabra los hace el backend (/api/contenidos?categoria=&q=).
+ */
+async function cargarContenidos(idContenedor, categoria, palabra) {
+    const parametros = new URLSearchParams();
+    if (categoria) parametros.append('categoria', categoria);
+    if (palabra) parametros.append('q', palabra);
+    const contenidos = await Api.get('/api/contenidos?' + parametros);
+    const contenedor = document.getElementById(idContenedor);
+    if (contenidos.length === 0) {
+        contenedor.innerHTML = '<p class="ayuda">No hay contenidos con ese filtro.</p>';
+        return;
+    }
+    const porCategoria = {};
+    contenidos.forEach(c => (porCategoria[c.categoria] = porCategoria[c.categoria] || []).push(c));
+    contenedor.innerHTML = Object.entries(porCategoria).map(([cat, lista]) =>
+        '<h3>' + escapar(TEXTO_CATEGORIA[cat] || cat) + '</h3>' + lista.map(c => '<div class="tarjeta"><b>' +
+            escapar(c.titulo) + '</b><p>' + escapar(c.cuerpo) + '</p></div>').join('')).join('');
+}
+
+const TEXTO_CATEGORIA = {
+    SEPARACION_RESIDUOS: 'Separación de residuos', RECICLAJE: 'Reciclaje',
+    REDUCCION_BASURA: 'Reducción de basura', BUENAS_PRACTICAS: 'Buenas prácticas'
+};

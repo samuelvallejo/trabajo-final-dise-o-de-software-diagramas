@@ -1,7 +1,9 @@
 /*
  * inicio.js — lógica de la página de inicio (index.html).
- * Usa las funciones comunes de api.js.
+ * Usa las funciones comunes de api.js y mapas.js.
  */
+
+let mapaPuntos, capaPuntos, mapaRutas, capaRutas;
 
 // ------------------------------------------------------------------ Iniciar sesión (HU-01)
 document.getElementById('formLogin').addEventListener('submit', async (evento) => {
@@ -33,7 +35,7 @@ document.getElementById('formRegistro').addEventListener('submit', async (evento
     }
 });
 
-// ------------------------------------------------------------------ Horarios por sector o barrio (HU-12)
+// ------------------------------------------------------------------ Horarios y rutas (HU-12)
 async function verHorarios() {
     const busqueda = document.getElementById('buscarSector').value.trim();
     if (!busqueda) return;
@@ -41,23 +43,24 @@ async function verHorarios() {
     contenedor.innerHTML = '';
     const resultado = await conMensaje('msgHorarios',
         () => Api.get('/api/horarios?sector=' + encodeURIComponent(busqueda)), ' ');
-    if (resultado) contenedor.innerHTML = htmlHorarios(resultado);
+    if (resultado) {
+        contenedor.innerHTML = htmlHorarios(resultado);
+        dibujarRutas(mapaRutas, capaRutas, resultado.rutas);
+    }
 }
 
 // ------------------------------------------------------------------ Puntos de recolección (HU-13)
 async function verPuntos() {
     const material = document.getElementById('filtroMaterial').value;
     const puntos = await Api.get('/api/puntos' + (material ? '?material=' + material : ''));
+    dibujarPuntos(mapaPuntos, capaPuntos, puntos);
     document.getElementById('puntos').innerHTML = htmlPuntos(puntos);
 }
 
 // ------------------------------------------------------------------ Educación ambiental (HU-14)
-async function verContenidos() {
-    const contenidos = await Api.get('/api/contenidos');
-    document.getElementById('contenidos').innerHTML = contenidos.length === 0
-        ? '<p class="ayuda">Aún no hay contenido publicado.</p>'
-        : contenidos.map(c => '<div class="tarjeta"><b>' + escapar(c.titulo) + '</b> <span class="ayuda">' +
-            escapar(c.categoria) + '</span><p>' + escapar(c.cuerpo) + '</p></div>').join('');
+function verContenidos() {
+    return cargarContenidos('contenidos', document.getElementById('filtroCategoria').value,
+        document.getElementById('buscarContenido').value.trim());
 }
 
 // ------------------------------------------------------------------ Al cargar la página
@@ -70,7 +73,10 @@ async function verContenidos() {
     } catch (e) {
         // sin sesión: se queda en el inicio
     }
+    mapaPuntos = crearMapa('mapaPuntos');
+    capaPuntos = L.featureGroup().addTo(mapaPuntos);
+    mapaRutas = crearMapa('mapaRutas');
+    capaRutas = L.featureGroup().addTo(mapaRutas);
     await cargarSectores('regSector', 'Sin sector');
-    await verPuntos();
-    await verContenidos();
+    await Promise.all([verPuntos(), verContenidos()]);
 })();

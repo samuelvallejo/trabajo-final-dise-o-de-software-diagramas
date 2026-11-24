@@ -57,16 +57,16 @@ TOP, TH = 20, 250
 # Smartphone del ciudadano
 node("device", ":Smartphone del ciudadano", 20, TOP, 460, TH)
 node("executionEnvironment", ":Navegador web móvil", 40, TOP + 70, 270, 160, env=True)
-artifact("vistas del ciudadano<br>(HTML Thymeleaf + JS)", 60, TOP + 135, 220, 70)
+artifact("vistas del ciudadano<br>(HTML Thymeleaf + JS + Leaflet)", 60, TOP + 135, 220, 70)
 node("device", ":Sensor GPS", 330, TOP + 120, 130, 60)
 # PC
 node("device", ":PC del ciudadano / administrador", 530, TOP, 380, TH)
 node("executionEnvironment", ":Navegador web", 555, TOP + 70, 320, 160, env=True)
-artifact("vistas web<br>(HTML Thymeleaf + JS)", 590, TOP + 135, 240, 70)
+artifact("vistas web<br>(HTML Thymeleaf + JS + Leaflet)", 590, TOP + 135, 240, 70)
 # Smartphone del operador
 node("device", ":Smartphone del operador", 960, TOP, 380, TH)
 node("executionEnvironment", ":Navegador web móvil", 985, TOP + 70, 320, 160, env=True)
-artifact("vistas del operador<br>(HTML Thymeleaf + JS)", 1020, TOP + 135, 240, 70)
+artifact("vistas del operador<br>(HTML Thymeleaf + JS + Leaflet)", 1020, TOP + 135, 240, 70)
 
 # ---------------- servidor de aplicación ----------------
 SX, SY, SW, SH = 400, 360, 560, 240
@@ -78,13 +78,13 @@ artifact("templates/<br>(vistas Thymeleaf)", SX + 310, SY + 120, 190, 70)
 # ---------------- fila inferior ----------------
 BY, BH, BW = 730, 200, 380
 xs = [40, 490, 940]
-node("device", ":Servidor de base de datos (Railway)", xs[0], BY, BW, BH)
-node("executionEnvironment", ":MongoDB", xs[0] + 15, BY + 55, BW - 40, 135, env=True)
+node("device", ":Servidor de base de datos", xs[0], BY, BW, BH)
+node("executionEnvironment", ":MongoDB Atlas (AWS N. Virginia)", xs[0] + 15, BY + 55, BW - 40, 135, env=True)
 artifact("ecogestion: colecciones, índices 2dsphere<br>y fotos en GridFS", xs[0] + 30, BY + 112, BW - 75, 64)
 node("device", ":Servicio de correo electrónico<br>(servidor SMTP)", xs[1], BY, BW, BH)
 artifact("relay SMTP", xs[1] + 80, BY + 95, BW - 160, 70)
-node("device", ":Servicio de mapas/GPS<br>(Google Maps Platform)", xs[2], BY, BW, BH)
-artifact("Maps JavaScript API<br>+ Geocoding API", xs[2] + 80, BY + 95, BW - 160, 70)
+node("device", ":Servicio de mapas/GPS<br>(OpenStreetMap)", xs[2], BY, BW, BH)
+artifact("Teselas del mapa<br>+ Nominatim (geocodificación)", xs[2] + 80, BY + 95, BW - 160, 70)
 
 # ---------------- conexiones ----------------
 top_y = TOP + TH
@@ -99,11 +99,11 @@ label("HTTPS:443<br>(HTML/JSON)", 1100, 300, 150, 40, "left")
 # servidor -> fila inferior
 sb = SY + SH
 line(520, sb, xs[0] + BW / 2, BY + 12)
-label("MongoDB Wire Protocol<br>TCP:27017", 150, 640, 190, 44, "right")
+label("MongoDB Wire Protocol<br>TLS · TCP:27017", 150, 640, 190, 44, "right")
 line(680, sb, xs[1] + BW / 2, BY + 12)
 label("SMTP/TLS:587", 700, 655, 130, 30, "left")
 line(840, sb, xs[2] + BW / 2, BY + 12)
-label("HTTPS:443<br>(Geocoding)", 1010, 622, 170, 44, "left")
+label("HTTPS:443<br>(Nominatim)", 1010, 622, 170, 44, "left")
 
 xml = ('<mxfile host="app.diagrams.net"><diagram id="despliegue" name="Vista de despliegue">'
        '<mxGraphModel dx="1360" dy="950" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" '

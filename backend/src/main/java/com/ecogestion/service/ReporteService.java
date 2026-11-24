@@ -48,7 +48,7 @@ import java.util.List;
  *   <li><b>Alta cohesión:</b> solo atiende operaciones de reportes; los usuarios, horarios o estadísticas
  *       tienen su propio servicio.</li>
  *   <li><b>Bajo acoplamiento / Variaciones protegidas:</b> depende de interfaces
- *       ({@link ServicioMapas}, {@link AlmacenamientoImagenes}); cambiar Google Maps o GridFS por otro
+ *       ({@link ServicioMapas}, {@link AlmacenamientoImagenes}); cambiar OpenStreetMap o GridFS por otro
  *       proveedor no obliga a modificar esta clase.</li>
  * </ul>
  * Las reglas de negocio <b>no</b> están aquí: viven en {@link Reporte} (Experto en información).

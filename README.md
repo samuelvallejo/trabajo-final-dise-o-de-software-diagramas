@@ -7,22 +7,20 @@ educación ambiental y estadísticas.
 
 ## Contenido
 
-Los 5 diagramas están modelados en **Visual Paradigm 18.1**, en un solo proyecto:
-[`docs/diagramas/visual-paradigm/EcoGestion.vpp`](docs/diagramas/visual-paradigm/EcoGestion.vpp)
-(ábrelo con *File > Open Project*; cada vista está en *Diagram Navigator* y sus elementos UML en *Model Explorer*).
+Los 5 diagramas están modelados en **Visual Paradigm 18.1**, un proyecto `.vpp` por diagrama en
+[`docs/diagramas/visual-paradigm`](docs/diagramas/visual-paradigm) (ábrelos con *File > Open Project*).
 
-Las imágenes de la presentación se generan con PlantUML y draw.io a partir de las fuentes editables de
-esta carpeta, porque la copia de Visual Paradigm usada es de evaluación y marca todas sus exportaciones con
-una marca de agua. Con una licencia activada, cada diagrama del `.vpp` se puede exportar directamente
-(*Export > Active Diagram as Image*).
+Las imágenes de la presentación son exportaciones limpias, porque la copia de Visual Paradigm usada es de
+evaluación y marca todas sus exportaciones con una marca de agua. Con una licencia activada, cada `.vpp` se
+puede exportar directamente (*Export > Active Diagram as Image*).
 
-| Vista | Diagrama en el proyecto VP | Fuente editable de la imagen | Imagen |
-|---|---|---|---|
-| Contexto (DFD nivel 0) | 1. Vista de contexto | [01-vista-contexto.drawio](docs/diagramas/01-vista-contexto.drawio) | [PNG](docs/diagramas/01-vista-contexto.png) |
-| Funcional (componentes UML) | 2. Vista funcional | [02-vista-funcional.drawio](docs/diagramas/02-vista-funcional.drawio) | [PNG](docs/diagramas/02-vista-funcional.png) |
-| Lógica (modelo de clases inicial) | 3. Vista lógica – Modelo de clases inicial | [03-vista-logica.puml](docs/diagramas/03-vista-logica.puml) | [PNG](docs/diagramas/03-vista-logica.png) |
-| Desarrollo (clases por capas controller → service → repository → model) | 4. Vista de desarrollo – Clases por capas | [04-vista-desarrollo.puml](docs/diagramas/04-vista-desarrollo.puml) | [PNG](docs/diagramas/04-vista-desarrollo.png) |
-| Despliegue (despliegue UML) | 5. Vista de despliegue | [05-vista-despliegue.drawio](docs/diagramas/05-vista-despliegue.drawio) | [PNG](docs/diagramas/05-vista-despliegue.png) |
+| Vista | Proyecto Visual Paradigm | Imagen |
+|---|---|---|
+| Contexto (DFD nivel 0) | [01-vista-contexto.vpp](docs/diagramas/visual-paradigm/01-vista-contexto.vpp) | [PNG](docs/diagramas/01-vista-contexto.png) |
+| Funcional (componentes UML) | [02-vista-funcional.vpp](docs/diagramas/visual-paradigm/02-vista-funcional.vpp) | [PNG](docs/diagramas/02-vista-funcional.png) |
+| Lógica (modelo de clases inicial) | [03-vista-logica.vpp](docs/diagramas/visual-paradigm/03-vista-logica.vpp) | [PNG](docs/diagramas/03-vista-logica.png) |
+| Desarrollo (clases por capas controller → service → repository → model) | [04-vista-desarrollo.vpp](docs/diagramas/visual-paradigm/04-vista-desarrollo.vpp) | [PNG](docs/diagramas/04-vista-desarrollo.png) |
+| Despliegue (despliegue UML) | [05-vista-despliegue.vpp](docs/diagramas/visual-paradigm/05-vista-despliegue.vpp) | [PNG](docs/diagramas/05-vista-despliegue.png) |
 
 - Presentación: [EcoGestion-Diseno-de-arquitectura.pptx](docs/EcoGestion-Diseno-de-arquitectura.pptx)
 - Historias de usuario: [historias-de-usuario.md](docs/historias/historias-de-usuario.md) (también publicadas como issues)
@@ -32,13 +30,13 @@ una marca de agua. Con una licencia activada, cada diagrama del `.vpp` se puede 
 
 | Capa | Tecnología |
 |---|---|
-| Aplicación (backend y vistas) | **Java 21 + Spring Boot 4**: Spring MVC (API REST), frontend HTML con plantillas **Thymeleaf** y JavaScript sin librerías, Spring Security, Spring Data MongoDB, Bean Validation. Sin React, Angular ni Node. |
+| Aplicación (backend y vistas) | **Java 21 + Spring Boot 4**: Spring MVC (API REST), frontend HTML con plantillas **Thymeleaf**, JavaScript y mapas con **Leaflet**, Spring Security, Spring Data MongoDB, Bean Validation. Sin React, Angular ni Node. |
 | Clientes | Navegador web del PC o del celular (el GPS se toma con la API de geolocalización del navegador) |
-| Base de datos | **MongoDB** (colecciones por agregado e índices `2dsphere` para consultas por cercanía) |
+| Base de datos | **MongoDB Atlas** (clúster gratuito en AWS N. Virginia; colecciones por agregado e índices `2dsphere` para consultas por cercanía) |
 | Almacenamiento de imágenes | MongoDB **GridFS** (en la misma base de datos) |
-| Despliegue | **Railway**: servicio web con el backend Spring Boot + servicio MongoDB |
+| Despliegue | **Railway** (región US East) para la aplicación Spring Boot + MongoDB Atlas para los datos |
 | Correo | Servidor SMTP (relay) |
-| Mapas y geocodificación | Google Maps Platform (Maps JavaScript API + Geocoding API) |
+| Mapas y geocodificación | **OpenStreetMap**: teselas del mapa en el navegador (Leaflet) y dirección de cada reporte con Nominatim; no necesita clave |
 
 ## Backend (carpeta `backend`)
 
@@ -54,7 +52,7 @@ backend/src/main/java/com/ecogestion
 ├── model        modelo de dominio rico: Usuario (abstracta) → Ciudadano, Operador, Administrador; Reporte
 │                (máquina de estados Pendiente → Asignado → En proceso → Resuelto, duplicados, cierre), Sector,
 │                RutaRecoleccion, PuntoRecoleccion, ContenidoEducativo, Notificacion y enumeraciones
-├── integracion  interfaces y estrategias: CanalNotificacion (correo/registro), ServicioMapas (Google/coordenadas),
+├── integracion  interfaces y estrategias: CanalNotificacion (correo/registro), ServicioMapas (OpenStreetMap/coordenadas),
 │                AlmacenamientoImagenes (GridFS)
 ├── security     autenticación con Spring Security (sesión HTTP, BCrypt, bloqueo tras 5 intentos)
 ├── config       seguridad, propiedades y datos iniciales (sectores, rutas, puntos y contenido de Pasto)
@@ -62,7 +60,7 @@ backend/src/main/java/com/ecogestion
 
 backend/src/main/resources
 ├── templates    páginas HTML (Thymeleaf): index, ciudadano, administrador, operador y fragmentos comunes
-└── static       css/estilos.css y js/ (api.js con las funciones comunes + un archivo por página)
+└── static       css/estilos.css y js/ (api.js y mapas.js con las funciones comunes + un archivo por página)
 ```
 
 Cada clase tiene un comentario que explica qué hace, cómo funciona y qué patrón GRASP aplica y por qué.
@@ -93,10 +91,10 @@ regla con una nota de encapsulamiento.
 
 | Página | Rol | Qué permite |
 |---|---|---|
-| `/` | Público | Iniciar sesión, registrarse, consultar horarios por sector o barrio, puntos de recolección y educación ambiental |
-| `/ciudadano` | Ciudadano | Crear reportes con GPS o coordenadas y fotos, ver su historial y detalle, notificaciones, horarios y puntos de su sector, perfil y contraseña |
-| `/administrador` | Administrador | Panel, bandeja con filtros, clasificar, revisar duplicados, asignar operadores, crear operadores, informe y CSV, contenido educativo y puntos |
-| `/operador` | Operador | Ver sus reportes asignados, iniciar la atención y cerrarlos con fotos de evidencia |
+| `/` | Público | Iniciar sesión, registrarse, consultar horarios y rutas por sector o barrio, puntos de recolección en el mapa y educación ambiental |
+| `/ciudadano` | Ciudadano | Crear reportes con fotos y ubicación por GPS o tocando el mapa, ver su historial y detalle, notificaciones, horarios y ruta de su sector, puntos en el mapa (por material, sector o cercanía), educación ambiental, perfil y contraseña |
+| `/administrador` | Administrador | Panel con mapa de calor, bandeja con filtros, clasificar, revisar duplicados, asignar operadores, crear operadores, informe y CSV, rutas y horarios, puntos y contenido educativo (crear y editar) |
+| `/operador` | Operador | Ver sus reportes asignados en lista y en mapa (color por prioridad), cómo llegar, iniciar la atención y cerrarlos con fotos de evidencia |
 
 Las páginas solo traen la estructura; los datos se piden a la API con `fetch` y la sesión viaja en la cookie
 `JSESSIONID`. Si alguien abre una página que no corresponde a su rol, se le lleva a la suya.
@@ -121,11 +119,11 @@ cd backend && ./mvnw test
 
 | Variable | Uso |
 |---|---|
-| `MONGO_URL` | Cadena de conexión de MongoDB (en Railway: `${{MongoDB.MONGO_URL}}`) |
+| `MONGO_URL` | Cadena de conexión de MongoDB (`mongodb+srv://...` de MongoDB Atlas) |
 | `MONGO_DATABASE` | Nombre de la base de datos (por defecto `ecogestion`) |
 | `ADMIN_CORREO`, `ADMIN_CONTRASENA` | Cuenta del primer administrador, que se crea al iniciar |
 | `DATOS_DEMO` | `true` (por defecto) carga sectores, rutas, puntos y contenido de ejemplo de Pasto |
-| `GOOGLE_MAPS_API_KEY` | Opcional: geocodificación con Google; sin ella la dirección se arma con las coordenadas |
+| `MAPAS_GEOCODIFICACION` | `osm` (por defecto) obtiene la dirección con Nominatim de OpenStreetMap; `coordenadas` no usa servicios externos |
 | `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME`, `SPRING_MAIL_PASSWORD`, `NOTIFICACIONES_CANAL=correo` | Opcional: envío real de correos; sin ellas las notificaciones quedan en el historial y en el registro |
 | `PORT` | Lo asigna Railway |
 
@@ -145,19 +143,20 @@ Los errores se devuelven en formato *Problem Details* (`status`, `title`, `detai
 Aplicación publicada: **https://trabajo-final-dise-o-de-software-diagramas-production.up.railway.app**
 (base de datos en MongoDB Atlas, clúster gratuito en AWS N. Virginia; servicio de Railway en US East).
 
-1. Nuevo proyecto en Railway → *Deploy from GitHub repo* → este repositorio, con *Root Directory* `backend`
+1. En MongoDB Atlas: clúster gratuito, usuario de base de datos con permiso `readWrite` sobre `ecogestion` y
+   acceso de red `0.0.0.0/0` (Railway no tiene IP fija).
+2. Nuevo proyecto en Railway → *Deploy from GitHub repo* → este repositorio, con *Root Directory* `/backend`
    (Railway detecta Maven y Java 21 y construye el `.jar`).
-2. Agregar un servicio **MongoDB** al proyecto.
-3. En el servicio web, definir `MONGO_URL=${{MongoDB.MONGO_URL}}`, `MONGO_DATABASE=ecogestion`,
-   `ADMIN_CORREO` y `ADMIN_CONTRASENA`.
-4. *Settings → Networking → Generate Domain* y comprobar `https://<dominio>/actuator/health`.
+3. En el servicio, definir `MONGO_URL` (cadena de Atlas), `MONGO_DATABASE=ecogestion`, `ADMIN_CORREO` y
+   `ADMIN_CONTRASENA`.
+4. *Settings → Networking → Generate Domain* (puerto 8080) y comprobar `https://<dominio>/actuator/health`.
 
 ## Regenerar los diagramas
 
-Imágenes (PlantUML necesita Java y Graphviz; draw.io desktop para los `.drawio`):
+Los diagramas se editan en Visual Paradigm (carpeta `visual-paradigm`). Las imágenes de contexto, funcional y
+despliegue también tienen una fuente editable en draw.io:
 
 ```bash
-java -jar plantuml.jar -charset UTF-8 -tpng docs/diagramas/*.puml
 draw.io --export --format png --scale 2 --border 20 --output docs/diagramas/01-vista-contexto.png docs/diagramas/01-vista-contexto.drawio
 draw.io --export --format png --scale 2 --border 20 --output docs/diagramas/05-vista-despliegue.png docs/diagramas/05-vista-despliegue.drawio
 draw.io --export --format png --scale 2 --border 20 --output docs/diagramas/02-vista-funcional.png docs/diagramas/02-vista-funcional.drawio
@@ -171,15 +170,6 @@ La presentación se arma con [`docs/generar_presentacion.py`](docs/generar_prese
 cd docs && python generar_presentacion.py plantilla.pptx diagramas EcoGestion-Diseno-de-arquitectura.pptx
 ```
 
-El proyecto de Visual Paradigm se construye con un plugin de la Open API de Visual Paradigm
-([`docs/diagramas/visual-paradigm/generador`](docs/diagramas/visual-paradigm/generador)): crea los
-elementos UML, los ubica, guarda el `.vpp` y exporta los PNG.
-
-```bash
-javac --release 11 -cp "C:/Program Files/Visual Paradigm 18.1/lib/openapi.jar" -d classes src/ecogestion/vp/EcoGestionVP.java
-# copiar plugin.xml y classes/ a %APPDATA%\VisualParadigm\plugins\ecogestion.vp\ y luego, desde "Visual Paradigm 18.1\scripts":
-Plugin.bat -project semilla.vpp -pluginid ecogestion.vp -pluginargs "salida.vpp carpetaImagenes carpetaLayouts"
-```
 
 ## Historias de usuario como issues
 

@@ -7,12 +7,20 @@
  *   EN_PROCESO → formulario "Registrar cierre"      (pasa a RESUELTO con descripción y evidencias)
  */
 
+let mapa, capa;
+
 async function cargarAsignaciones() {
     const orden = document.getElementById('orden').value;
     const reportes = await Api.get('/api/operador/asignaciones?orden=' + orden);
     document.getElementById('asignaciones').innerHTML = reportes.length === 0
         ? '<p class="ayuda">No tiene reportes pendientes de atender.</p>'
         : reportes.map(tarjeta).join('');
+    // Vista de mapa: un marcador por reporte con el color de su prioridad (HU-08, criterio 2)
+    capa.clearLayers();
+    reportes.forEach(r => marcadorCirculo(r.latitud, r.longitud, COLOR_PRIORIDAD[r.prioridad]).addTo(capa)
+        .bindPopup('<b>' + escapar(r.descripcion) + '</b><br>' + texto(r.prioridad) + ' · ' + texto(r.estado) +
+            '<br>' + enlaceComoLlegar(r.latitud, r.longitud)));
+    encuadrar(mapa, capa);
 }
 
 /** HTML de un reporte con la acción que corresponde a su estado. */
@@ -33,7 +41,7 @@ function tarjeta(r) {
         '<p>' + etiqueta(r.prioridad) + ' ' + etiqueta(r.estado) + ' · ' + texto(r.tipoResiduo) + ' · ' +
         fecha(r.fechaReporte) + '</p>' +
         '<p>' + escapar(r.direccion || '') + ' · Sector: ' + escapar(r.sector || '—') + ' · ' +
-        enlaceMapa(r.latitud, r.longitud) + '</p>' +
+        enlaceComoLlegar(r.latitud, r.longitud) + '</p>' +
         galeria(r.fotos) + accion + '</div>';
 }
 
@@ -59,5 +67,7 @@ async function cerrar(id) {
 
 (async function iniciarPagina() {
     if (!await exigirRol('OPERADOR')) return;
+    mapa = crearMapa('mapaAsignaciones');
+    capa = L.featureGroup().addTo(mapa);
     await cargarAsignaciones();
 })();

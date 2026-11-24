@@ -3,7 +3,8 @@
   Página de inicio (pública).
   - Iniciar sesión: después lleva a la página del rol (ciudadano, administrador u operador). HU-01
   - Registrarse como ciudadano. HU-01
-  - Consultas públicas: horarios por sector (HU-12), puntos de recolección (HU-13) y educación ambiental (HU-14).
+  - Consultas públicas: horarios y rutas por sector o barrio con su recorrido en el mapa (HU-12),
+    puntos de recolección en el mapa (HU-13) y educación ambiental por categoría y palabra (HU-14).
   La lógica está en /js/inicio.js.
 -->
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
@@ -48,13 +49,14 @@
     </div>
 
     <section>
-        <h2>Horarios de recolección por sector o barrio</h2>
+        <h2>Horarios y rutas de recolección por sector o barrio</h2>
         <div class="fila">
             <div><label for="buscarSector">Sector o barrio</label><input id="buscarSector" placeholder="Ej.: Centro o Torobajo"></div>
             <div style="flex:0"><button type="button" onclick="verHorarios()">Consultar</button></div>
         </div>
         <div id="msgHorarios" class="mensaje"></div>
         <div id="horarios"></div>
+        <div id="mapaRutas" class="mapa pequeno"></div>
     </section>
 
     <section>
@@ -68,11 +70,23 @@
                 </select>
             </div>
         </div>
+        <div id="mapaPuntos" class="mapa"></div>
         <div id="puntos"></div>
     </section>
 
     <section>
         <h2>Educación ambiental</h2>
+        <div class="fila">
+            <div>
+                <label for="filtroCategoria">Categoría</label>
+                <select id="filtroCategoria" onchange="verContenidos()">
+                    <option value="">Todas</option>
+                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">CATEGORIA</option>
+                </select>
+            </div>
+            <div><label for="buscarContenido">Buscar por palabra</label><input id="buscarContenido" placeholder="Ej.: pilas"></div>
+            <div style="flex:0"><button type="button" onclick="verContenidos()">Buscar</button></div>
+        </div>
         <div id="contenidos"></div>
     </section>
 </main>

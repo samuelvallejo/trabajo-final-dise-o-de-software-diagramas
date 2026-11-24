@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <!--
   Página del ciudadano (requiere sesión con rol CIUDADANO).
-  - Nuevo reporte con descripción, tipo, ubicación (GPS o coordenadas) y fotos. HU-03, HU-04
+  - Nuevo reporte con descripción, tipo, fotos y ubicación por GPS o tocando el mapa. HU-03, HU-04
   - Mis reportes con su estado e historial. HU-10
   - Mis notificaciones. HU-11
-  - Horarios y puntos de recolección de mi sector. HU-12, HU-13
+  - Horarios y ruta de mi sector en el mapa. HU-12
+  - Puntos de recolección en el mapa, por material y sector, u ordenados por cercanía. HU-13
+  - Educación ambiental por categoría y palabra clave. HU-14
   - Mi perfil y cambio de contraseña. HU-02
   La lógica está en /js/ciudadano.js.
 -->
@@ -19,18 +21,17 @@
         <form id="formReporte">
             <label for="descripcion">¿Qué está pasando?</label>
             <textarea id="descripcion" required placeholder="Ej.: Bolsas de basura acumuladas en la esquina del parque"></textarea>
+            <label for="tipoResiduo">Tipo de residuo</label>
+            <select id="tipoResiduo" required>
+                <option th:each="t : ${tipos}" th:value="${t}" th:text="${t}">TIPO</option>
+            </select>
+            <label>Ubicación: use el GPS o toque el punto exacto en el mapa (no necesita estar en el lugar)</label>
+            <button type="button" class="secundario" onclick="usarGps()">Usar mi ubicación (GPS)</button>
+            <div id="mapaReporte" class="mapa"></div>
             <div class="fila">
-                <div>
-                    <label for="tipoResiduo">Tipo de residuo</label>
-                    <select id="tipoResiduo" required>
-                        <option th:each="t : ${tipos}" th:value="${t}" th:text="${t}">TIPO</option>
-                    </select>
-                </div>
                 <div><label for="latitud">Latitud</label><input id="latitud" type="number" step="any" required></div>
                 <div><label for="longitud">Longitud</label><input id="longitud" type="number" step="any" required></div>
             </div>
-            <button type="button" class="secundario" onclick="usarGps()">Usar mi ubicación (GPS)</button>
-            <button type="button" class="secundario" onclick="usarCentro()">Usar el centro de Pasto</button>
             <label for="fotos">Fotos (de 1 a 5, JPG o PNG, máximo 5 MB cada una)</label>
             <input id="fotos" type="file" accept="image/jpeg,image/png" multiple required>
             <button type="submit">Enviar reporte</button>
@@ -59,21 +60,53 @@
             <div id="notificaciones"></div>
         </section>
         <section>
-            <h2>Horarios de mi sector</h2>
+            <h2>Horarios y ruta de mi sector</h2>
             <div id="msgHorarios" class="mensaje"></div>
             <div id="horarios"></div>
+            <div id="mapaRutas" class="mapa pequeno"></div>
         </section>
     </div>
 
     <section>
-        <h2>Puntos de recolección de mi sector</h2>
+        <h2>Puntos de recolección autorizados</h2>
+        <div class="fila">
+            <div>
+                <label for="filtroMaterial">Material</label>
+                <select id="filtroMaterial" onchange="cargarPuntos()">
+                    <option value="">Todos</option>
+                    <option th:each="m : ${materiales}" th:value="${m}" th:text="${m}">MATERIAL</option>
+                </select>
+            </div>
+            <div><label for="filtroSector">Sector</label><select id="filtroSector" onchange="cargarPuntos()"></select></div>
+            <div style="flex:0"><button type="button" class="secundario" onclick="puntosCercanos()">Ordenar por cercanía</button></div>
+        </div>
+        <div id="msgPuntos" class="mensaje"></div>
+        <div id="mapaPuntos" class="mapa"></div>
         <div id="puntos"></div>
+    </section>
+
+    <section>
+        <h2>Educación ambiental</h2>
+        <div class="fila">
+            <div>
+                <label for="filtroCategoria">Categoría</label>
+                <select id="filtroCategoria" onchange="verContenidos()">
+                    <option value="">Todas</option>
+                    <option th:each="c : ${categorias}" th:value="${c}" th:text="${c}">CATEGORIA</option>
+                </select>
+            </div>
+            <div><label for="buscarContenido">Buscar por palabra</label><input id="buscarContenido" placeholder="Ej.: reciclaje"></div>
+            <div style="flex:0"><button type="button" onclick="verContenidos()">Buscar</button></div>
+        </div>
+        <div id="contenidos"></div>
     </section>
 
     <div class="columnas">
         <section>
             <h2>Mi perfil</h2>
             <form id="formPerfil">
+                <label for="perfilDocumento">Documento (no se puede cambiar)</label>
+                <input id="perfilDocumento" disabled>
                 <label for="perfilNombre">Nombre</label>
                 <input id="perfilNombre" required>
                 <label for="perfilCorreo">Correo</label>

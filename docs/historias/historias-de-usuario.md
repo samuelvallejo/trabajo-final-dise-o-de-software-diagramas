@@ -125,7 +125,7 @@ Como **ciudadano**, quiero registrar la ubicación del problema con el GPS de mi
 
 ## Notas / reglas de negocio
 - La ubicación se guarda en los atributos latitud, longitud, direccion y sector del Reporte.
-- El mapa se muestra en la vista web con Maps JavaScript API; Gestión de reportes obtiene la dirección con la Geocoding API (Servicio de mapas/GPS) y el sector lo identifica Horarios y rutas ("Identificar sector").
+- El mapa se muestra en la vista web con Leaflet y OpenStreetMap; Gestión de reportes obtiene la dirección con Nominatim (geocodificación de OpenStreetMap) (Servicio de mapas/GPS) y el sector lo identifica Horarios y rutas ("Identificar sector").
 
 ## Trazabilidad
 Componente de la vista funcional: **Gestión de reportes (usa el Servicio de mapas/GPS)** (ver `docs/diagramas/02-vista-funcional.png`).
@@ -225,7 +225,7 @@ Como **operador de limpieza**, quiero ver los reportes que tengo asignados con s
 1. **Dado** que inicié sesión como operador, **cuando** abro "Mis asignaciones", **entonces** veo solo los reportes asignados a mí que no están resueltos.
 2. **Dado** la lista de asignaciones, **cuando** cambio a vista de mapa, **entonces** cada reporte aparece como un marcador con color según su prioridad.
 3. **Dado** un reporte asignado, **cuando** abro su detalle, **entonces** veo descripción, tipo de residuo, prioridad, fotos, dirección y la opción "Cómo llegar".
-4. **Dado** que tengo varias asignaciones, **cuando** ordeno la lista, **entonces** puedo ordenarla por prioridad o por fecha de asignación.
+4. **Dado** que tengo varias asignaciones, **cuando** ordeno la lista, **entonces** puedo ordenarla por prioridad o por fecha del reporte (los más antiguos primero).
 
 ## Prioridad
 **Alta** — Sin esta vista el operador no sabe qué atender ni dónde.
@@ -237,7 +237,7 @@ Como **operador de limpieza**, quiero ver los reportes que tengo asignados con s
 - Un operador no puede ver los reportes asignados a otros operadores.
 
 ## Trazabilidad
-Componente de la vista funcional: **Asignación y atención (el mapa se muestra en la vista web con Maps JavaScript API)** (ver `docs/diagramas/02-vista-funcional.png`).
+Componente de la vista funcional: **Asignación y atención (el mapa se muestra en la vista web con Leaflet y OpenStreetMap)** (ver `docs/diagramas/02-vista-funcional.png`).
 
 
 ---
@@ -341,7 +341,7 @@ Como **ciudadano**, quiero consultar los horarios y rutas de recolección de mi 
 **5 puntos de historia**
 
 ## Notas / reglas de negocio
-- Un sector agrupa varios barrios; una ruta puede cubrir varios sectores. La ruta se dibuja en la vista web con Maps JavaScript API.
+- Un sector agrupa varios barrios; una ruta puede cubrir varios sectores. La ruta se dibuja en la vista web con Leaflet y OpenStreetMap.
 
 ## Trazabilidad
 Componente de la vista funcional: **Horarios y rutas** (ver `docs/diagramas/02-vista-funcional.png`).
@@ -371,7 +371,7 @@ Como **ciudadano**, quiero ver en un mapa los puntos de recolección autorizados
 - Si el ciudadano comparte su ubicación, la lista se ordena por cercanía.
 
 ## Trazabilidad
-Componente de la vista funcional: **Puntos de recolección (consulta el sector a Horarios y rutas; mapa con Maps JavaScript API)** (ver `docs/diagramas/02-vista-funcional.png`).
+Componente de la vista funcional: **Puntos de recolección (consulta el sector a Horarios y rutas; mapa con Leaflet y OpenStreetMap)** (ver `docs/diagramas/02-vista-funcional.png`).
 
 
 ---

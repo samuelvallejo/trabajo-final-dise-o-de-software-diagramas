@@ -25,9 +25,10 @@ public record EcoGestionProperties(
 
     public record Notificaciones(String canal, String remitente, int reintentos) { }
 
-    public record Mapas(String googleApiKey) {
-        public boolean tieneClave() {
-            return googleApiKey != null && !googleApiKey.isBlank();
+    /** geocodificacion: "osm" (OpenStreetMap Nominatim) o "coordenadas" (sin servicio externo). */
+    public record Mapas(String geocodificacion) {
+        public boolean usaOpenStreetMap() {
+            return !"coordenadas".equalsIgnoreCase(geocodificacion);
         }
     }
 

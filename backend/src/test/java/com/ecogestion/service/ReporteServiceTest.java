@@ -58,7 +58,7 @@ class ReporteServiceTest {
         almacenamiento = mock(AlmacenamientoImagenes.class);
         EcoGestionProperties propiedades = new EcoGestionProperties(
                 new EcoGestionProperties.Notificaciones("registro", "no-responder@ecogestion.co", 3),
-                new EcoGestionProperties.Mapas(""), new EcoGestionProperties.Duplicados(50),
+                new EcoGestionProperties.Mapas("coordenadas"), new EcoGestionProperties.Duplicados(50),
                 new EcoGestionProperties.Seguridad(5, 15), new EcoGestionProperties.Admin("", ""),
                 new EcoGestionProperties.Municipio(1.10, 1.32, -77.40, -77.18), false);
         servicio = new ReporteService(ciudadanoRepository, operadorRepository, reporteRepository, new ClasificacionService(),
