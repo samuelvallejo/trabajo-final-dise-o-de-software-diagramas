@@ -92,3 +92,18 @@ cinco diagramas (vista de contexto, funcional, lógica, de desarrollo y de despl
 | Servicio de mapas/GPS (externo) | `ServicioMapas` (`OpenStreetMapServicioMapas`, `CoordenadasServicioMapas`) | — | HU-04 |
 | Almacenamiento de imágenes | `AlmacenamientoImagenes` (`GridFsAlmacenamientoImagenes`) | `GET /api/imagenes/{id}` | HU-03, HU-09 |
 | Interfaz web (vistas Thymeleaf + JS) | — | `PaginasController` (`/`, `/ciudadano`, `/administrador`, `/operador`) con `static/js/*.js` | HU-01 a HU-15 |
+
+## 6. Vista lógica → vista de desarrollo
+
+La vista lógica es el modelo del dominio del caso (qué existe en el problema). La vista de desarrollo muestra cómo
+está construido el código, por eso incluye además clases de diseño que no son conceptos del caso:
+
+| Vista lógica (dominio) | Vista de desarrollo (código) | Motivo |
+|---|---|---|
+| `GestorReportes` | `ReporteService` (con sus repositorios) | En una aplicación Spring Boot la gestión de reportes es un servicio; el administrador lo usa a través de `ReporteController` |
+| `Ciudadano` | `Ciudadano` «Document» (hereda de `Usuario`) | Mismos datos; las credenciales y el bloqueo pasan a la clase padre |
+| `Operador` | `Operador` «Document» (hereda de `Usuario`) | Mismos datos; agrega `verificarDisponible()` |
+| `Reporte` | `Reporte` «Document» | Mismos atributos y reglas; agrega `ubicacion` (GeoJSON) y `version` (control de concurrencia) |
+| — | `Usuario` (abstracta) | Clase de diseño: evita repetir los datos comunes de ciudadano, operador y administrador (herencia) |
+| — | `Rol` «enumeration» | Clase de diseño: representa a los actores para Spring Security y decide con polimorfismo qué reportes ve cada uno; cada `Usuario` tiene un rol |
+| — | `CatalogoReportes` «interface» | Clase de diseño (Fabricación pura e Indirección): consultas que `Rol` pide sin conocer MongoDB; la implementa `ReporteService` |
